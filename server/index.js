@@ -4,13 +4,12 @@ const morgan = require("morgan");
 const compression = require("compression");
 
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
-// TODO: db
-// const db = require("./db");
+const db = require("./db");
 const PORT = process.env.PORT || 8080;
 const app = express();
 
 // load .env values
-require('dotenv').config()
+require("dotenv").config();
 
 module.exports = app;
 
@@ -83,16 +82,16 @@ const startListening = () => {
 const syncDb = () => db.sync();
 
 async function bootApp() {
-  // TODO: uncomment these when sessionstore and db are added
+  // TODO: sessionstore sync
   // await sessionStore.sync();
-  // await syncDb();
+  await syncDb();
   await createApp();
   await startListening();
 }
 
 // for if I ever write tests lol
-if(require.main == module){
+if (require.main == module) {
   bootApp();
-}else{
+} else {
   createApp();
 }
