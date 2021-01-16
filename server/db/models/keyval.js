@@ -24,3 +24,13 @@ const Keyval = db.define("keyval", {
 });
 
 module.exports = Keyval;
+
+
+/**
+ * List of keys I will be storing here:
+ *
+ * num : int
+ * current confession number (the next confession to be sent will be assigned this)
+ *
+ * 
+ */

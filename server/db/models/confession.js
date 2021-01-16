@@ -38,6 +38,10 @@ const Confession = db.define("confession", {
   file_id: {
     type: Sequelize.STRING,
   },
+  send_by: {
+    type: Sequelize.DATE,
+    allowNull: true,
+  },
 });
 
 module.exports = Confession;

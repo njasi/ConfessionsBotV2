@@ -18,6 +18,10 @@ const User = db.define("user", {
   verification_request_time: {
     type: Sequelize.DATE,
   },
+  locked: {
+    type: Sequelize.BOOLEAN,
+    defaultValue: false,
+  },
 });
 
 module.exports = User;
