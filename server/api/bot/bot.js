@@ -1,6 +1,11 @@
+process.env.NTBA_FIX_319 = 1;
+
 const Bot = require("node-telegram-bot-api");
 const token = process.env.BOT_TOKEN;
-const bot = new Bot(token, { polling: process.env.NODE_ENV !== "production" });
+const bot = new Bot(token, {
+  polling: process.env.NODE_ENV !== "production",
+  onlyFirstMatch: true,
+});
 
 if (process.env.NODE_ENV !== "production") {
   bot.setWebHook();
@@ -9,4 +14,4 @@ if (process.env.NODE_ENV !== "production") {
   // bot.setWebHook(`https://frosh-io.herokuapp.com/api/bot/${token}`);
 }
 
-module.exports = bot
+module.exports = bot;
