@@ -1,10 +1,6 @@
-function send_menu(menu, from, bot) {
-  menu.send(bot);
-}
-
-function send_menu_from_key(menu_key, from, bot) {
-  MENUS[menu_key].send(bot, from);
-}
+const { User } = require("../../db/models");
+const { getFullName } = require("./helpers");
+const { sendVerifyPoll } = require("./verify");
 
 /**
  * haha butt
@@ -27,10 +23,26 @@ function ik(buttons) {
   return { reply_markup: { inline_keyboard: buttons } };
 }
 
-async function detectAndSwapMenu(query) {
-  if (query.data.match(/^menu/)) {
-    const params = params_from_string(query.data);
-    await swapMenu(query, params);
+async function swapMenu(query, params, bot) {
+  const menu = MENUS[params.menu];
+  const data = await menu.load(query.from, { bot, ...params, query });
+  await bot.editMessageText(data.text, {
+    message_id: query.message.message_id,
+    chat_id: query.message.chat.id,
+    parse_mode: "HTML",
+    ...data.options,
+  });
+  // if (option.media) {
+  //   await bot.editMessageMedia(option.media, {
+  //     message_id: query.message.message_id,
+  //     chat_id: query.message.chat.id,
+  //   });
+  // }
+}
+
+async function detectAndSwapMenu(query, params, bot) {
+  if (query.data.match(/^menu=/)) {
+    swapMenu(query, params, bot);
     return true;
   }
   return false;
@@ -46,15 +58,24 @@ class Menu {
   }
   async send(bot, from, options) {
     try {
-      const data = await this.load(
-        from,
-        options,
-        ...Array.prototype.slice.call(arguments, [3])
-      );
-      bot.sendMessage(from.id, data.text, {
+      let data;
+      const user = await User.findOne({ where: { telegram_id: from.id } });
+      if (user != null && user.verification_status == -1) {
+        const options = { ...ik([[butt("Ok", "delete=true")]]) };
+        const text = "You've been banned, begone from this place!";
+        data = { options, text };
+      } else {
+        data = await this.load(
+          from,
+          { ...options, bot: bot, user },
+          ...Array.prototype.slice.call(arguments, [3])
+        );
+      }
+      const res = await bot.sendMessage(from.id, data.text, {
         parse_mode: "HTML",
         ...data.options,
       });
+      return res;
     } catch (error) {
       bot.sendMessage(
         process.env.ADMIN_ID,
@@ -86,7 +107,7 @@ const start = new Menu((from, args) => {
               butt("Select Auxillary Chat", "menu=chatlist"),
             ],
           ]),
-      [butt("Help", "menu=help"), butt("Cancel", "menu=cancel")],
+      [butt("Help", "menu=help"), butt("Cancel", "delete=true")],
     ]),
     ...(args.from_command
       ? {}
@@ -95,8 +116,83 @@ const start = new Menu((from, args) => {
   return { text, options };
 }, "start");
 
+const verify = new Menu(async (from, args) => {
+  const user = args.user;
+  let text =
+      "You're currently not verified, would you like to request verification and approval for using the bot?",
+    keyboard = [
+      [butt("Verify Me", "menu=request_verify")],
+      [butt("Cancel", "delete=true")],
+    ];
+
+  if (user !== null) {
+    switch (user.verification_status) {
+      case -2:
+        text =
+          "You are currently being verified. Note that verification may take up to a day. Please be patient.";
+        keyboard = [[butt("Ok", "delete=true")]];
+        break;
+      case -1:
+        text = "Sorry, you have been banned from using this bot.";
+        keyboard = [[butt("Ok", "delete=true")]];
+        break;
+      case 0:
+        break;
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        text =
+          "You have already been verified and are allowed to use the bot. If you want to update your information please use /verifyupdate or the button below";
+        keyboard = [
+          [
+            butt("Cancel", "delete=true"),
+            butt("Update Me", "menu=verify_update"),
+          ],
+        ];
+    }
+  }
+  const options = { ...ik(keyboard) };
+  return { text, options };
+}, "verify");
+
+const request_verify = new Menu(async (from, args) => {
+  const [user, create] = await User.findOrCreate({
+    where: {
+      telegram_id: from.id,
+    },
+  });
+  if (!create) {
+    const until =
+      Date().getTime() -
+      (verification_request_time.getTime() + user.verification_cool_down);
+    if (until > 0) {
+      const text = `You need to wait for ${
+        until / 3600000
+      } hours before attempting to verify again.`;
+      const options = { ...ik([[butt("Ok", "delete=true")]]) };
+      return { text, options };
+    }
+  }
+  const res = await sendVerifyPoll(args.bot, from);
+  console.log(res);
+  user.poll_id = res.poll.id;
+  user.verification_request_time = new Date();
+  user.name = getFullName(from, (username = false));
+  user.username = from.username;
+  user.verification_status = -2;
+  await user.save();
+
+  const text =
+    "Ok, I've sent your request to the verification chat! I'll let you know when your request has been resolved.";
+  const options = { ...ik([[butt("Ok", "delete=true")]]) };
+  return { text, options };
+}, "request_verify");
+
 const MENUS = {
   start,
+  verify,
+  request_verify,
 };
 
 module.exports = { MENUS, detectAndSwapMenu };
