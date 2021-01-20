@@ -88,7 +88,59 @@ bot.on(
   "message",
   vMid(async (message, meta) => {
     if (isDm(message)) {
-      MENUS.start.send(bot, message.from, { from_command: false, message });
+      // TODO: make an In_progress confession
+      const user = await User.findOne({
+        where: { telegram_id: message.from.id },
+      });
+      if (user.locked) {
+        return;
+      }
+      console.log(meta);
+      let confession;
+      try {
+        switch (meta.type) {
+          case "text":
+            if (message.text.length > 4062) {
+              bot.sendMessage(
+                message.from.id,
+                `Sorry, your confession was ${
+                  message.text.length - 4062
+                } characters long.`,
+                {
+                  reply_markup: {
+                    inline_keyboard: [
+                      [{ text: "Ok", callback_data: "delete=true" }],
+                    ],
+                  },
+                  reply_to_message_id: message.message_id,
+                }
+              );
+            } else {
+              confession = await Confession.create({
+                type: meta.type,
+                text: message.text,
+                userId: user.id,
+              });
+            }
+        }
+        // TODO: save the start menu message.message_id into the tuple
+        MENUS.start.send(bot, message.from, { from_command: false, message });
+      } catch (error) {
+        bot.sendMessage(
+          process.env.ADMIN_ID,
+          `Someone attempted to send a ${meta.type} through confessions bot.`
+        );
+        bot.sendMessage(
+          message.from.id,
+          "Sorry, Confessions Bot does not currently support this type of message.",
+          {
+            reply_markup: {
+              inline_keyboard: [[{ text: "Ok", callback_data: "delete=true" }]],
+            },
+            reply_to_message_id: message.message_id,
+          }
+        );
+      }
     } else {
       // must be a message in the chat
     }
@@ -115,9 +167,10 @@ bot.onText(
   })
 );
 
-/**
- *
- */
+// TODO: lock command
+// TODO: unlock command
+// TODO: about command
+// TODO: help command
 
 bot.on("migrate_from_chat_id", (message, meta) => {
   bot.sendMessage(process.env.ADMIN_ID, JSON.stringify(message));
@@ -148,7 +201,7 @@ bot.on("callback_query", async (query) => {
             inline_keyboard: [
               [
                 { text: "Help", callback_data: "menu=help" },
-                { text: "About Confessions" },
+                { text: "About Confessions", callback_data: "menu=about" },
               ],
               [{ text: "Ok", callback_data: "delete=true" }],
             ],

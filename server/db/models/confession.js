@@ -44,6 +44,14 @@ const Confession = db.define("confession", {
     type: Sequelize.DATE,
     allowNull: true,
   },
+  in_progress: {
+    type: Sequelize.BOOLEAN,
+    defaultValue: true,
+  },
+  menu_id: {
+    type: Sequelize.STRING,
+    allowNull: true,
+  },
 });
 
 const text_add_prefix = (text, num) => {
@@ -64,7 +72,7 @@ async function send(confession, chat_id, num) {
                 [
                   {
                     text: "View Content",
-                    callback_data: `cw_confession_num=${num}`, // TODO: cw confession num
+                    callback_data: `cw_confession_num=${num}`, // TODO: cw confession num in query stuff
                   },
                 ],
               ],

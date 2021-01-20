@@ -175,7 +175,6 @@ const request_verify = new Menu(async (from, args) => {
     }
   }
   const res = await sendVerifyPoll(args.bot, from);
-  console.log(res);
   user.poll_id = res.poll.id;
   user.verification_request_time = new Date();
   user.name = getFullName(from, (username = false));
