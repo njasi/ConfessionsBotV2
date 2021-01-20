@@ -1,3 +1,4 @@
+require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const morgan = require("morgan");
@@ -9,7 +10,6 @@ const PORT = process.env.PORT || 8080;
 const app = express();
 
 // load .env values
-require("dotenv").config();
 
 module.exports = app;
 

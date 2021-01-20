@@ -4,7 +4,6 @@ const Bot = require("node-telegram-bot-api");
 const token = process.env.BOT_TOKEN;
 const bot = new Bot(token, {
   polling: process.env.NODE_ENV !== "production",
-  onlyFirstMatch: true,
 });
 
 if (process.env.NODE_ENV !== "production") {

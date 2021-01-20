@@ -11,8 +11,9 @@ const Keyval = db.define("keyval", {
     set(val) {
       try {
         JSON.parse(val);
-        this.setDataValue("value");
+        this.setDataValue("value", val);
       } catch (error) {
+        console.log(val, JSON.stringify(val));
         this.setDataValue("value", JSON.stringify(val));
       }
     },
@@ -25,12 +26,11 @@ const Keyval = db.define("keyval", {
 
 module.exports = Keyval;
 
-
 /**
  * List of keys I will be storing here:
  *
  * num : int
  * current confession number (the next confession to be sent will be assigned this)
  *
- * 
+ *
  */
