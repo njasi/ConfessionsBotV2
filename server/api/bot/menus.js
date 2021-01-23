@@ -1,7 +1,7 @@
-const { User } = require("../../db/models");
+const { User, Confession } = require("../../db/models");
 const { getFullName } = require("./helpers");
 const { sendVerifyPoll } = require("./verify");
-
+const confession_responses = require("./config/confession_responses.json");
 /**
  * haha butt
  * returns a formatted button for me so I can be lazy
@@ -25,7 +25,12 @@ function ik(buttons) {
 
 async function swapMenu(query, params, bot) {
   const menu = MENUS[params.menu];
-  const data = await menu.load(query.from, { bot, ...params, query });
+  const data = await menu.load(query.from, {
+    bot,
+    ...params,
+    query,
+    from_swap: true,
+  });
   await bot.editMessageText(data.text, {
     message_id: query.message.message_id,
     chat_id: query.message.chat.id,
@@ -59,6 +64,7 @@ class Menu {
   async send(bot, from, options) {
     try {
       let data;
+      // a lot of menus need the user so
       const user = await User.findOne({ where: { telegram_id: from.id } });
       if (user != null && user.verification_status == -1) {
         const options = { ...ik([[butt("Ok", "delete=true")]]) };
@@ -67,7 +73,7 @@ class Menu {
       } else {
         data = await this.load(
           from,
-          { ...options, bot: bot, user },
+          { ...options, bot: bot, user: user },
           ...Array.prototype.slice.call(arguments, [3])
         );
       }
@@ -85,14 +91,50 @@ class Menu {
   }
 }
 
-const start = new Menu((from, args) => {
-  const text = `Welcome ${
+const start = new Menu(async (from, args) => {
+  let text = `Welcome ${
     from.first_name
   }! Please use the buttons below to navigate the menus${
     args.from_command
       ? ". If you want to send a confession just message me normally"
       : " and configure your confession"
   }.`;
+  const confs = await Confession.findAll({
+    where: { in_progress: true },
+    include: {
+      model: User,
+      where: {
+        telegram_id: from.id,
+      },
+    },
+    order: [["updatedAt", "DESC"]],
+  });
+  if (confs.length == 2) {
+    text =
+      "It seems you already have an active confession. Would you like to discard the older confession and continue with this one?";
+    const options = {
+      ...ik([
+        [
+          butt("Continue", `menu=start&remove_confession=${confs[1].id}`),
+          butt("Cancel This Confession", `remove_confession=${confs[0].id}`),
+        ],
+      ]),
+      reply_to_message_id: args.message.message_id,
+    };
+    return { text, options };
+  } else if (confs.length > 2) {
+    text = `You already have ${
+      confs.length - 1
+    } other active confessions, please deal with them first.`;
+    await confs[0].destroy();
+    return {
+      text,
+      options: {
+        ...ik([[butt("Ok", "delete=true")]]),
+        reply_to_message_id: args.message.message_id,
+      },
+    };
+  }
   const options = {
     ...ik([
       ...(args.from_command
@@ -100,16 +142,15 @@ const start = new Menu((from, args) => {
         : [
             [
               butt("Send Confession", "menu=send"),
-              butt("Add Content Warning", "menu=cw"),
-            ],
-            [
-              butt("Reply to Message", "menu=reply"),
-              butt("Select Auxillary Chat", "menu=chatlist"),
+              butt("Settings", "menu=settings"),
             ],
           ]),
-      [butt("Help", "menu=help"), butt("Cancel", "delete=true")],
+      [
+        butt("Help", "menu=help"),
+        butt("Cancel", `remove_confession=${confs[0].id}`),
+      ],
     ]),
-    ...(args.from_command
+    ...(args.from_command || args.from_swap
       ? {}
       : { reply_to_message_id: args.message.message_id }),
   };
@@ -121,7 +162,7 @@ const verify = new Menu(async (from, args) => {
   let text =
       "You're currently not verified, would you like to request verification and approval for using the bot?",
     keyboard = [
-      [butt("Verify Me", "menu=request_verify")],
+      [butt("Verify Me", "menu=verify_request")],
       [butt("Cancel", "delete=true")],
     ];
 
@@ -156,7 +197,7 @@ const verify = new Menu(async (from, args) => {
   return { text, options };
 }, "verify");
 
-const request_verify = new Menu(async (from, args) => {
+const verify_request = new Menu(async (from, args) => {
   const [user, create] = await User.findOrCreate({
     where: {
       telegram_id: from.id,
@@ -186,12 +227,152 @@ const request_verify = new Menu(async (from, args) => {
     "Ok, I've sent your request to the verification chat! I'll let you know when your request has been resolved.";
   const options = { ...ik([[butt("Ok", "delete=true")]]) };
   return { text, options };
-}, "request_verify");
+}, "verify_request");
+
+const send = new Menu(async (from, args) => {
+  const text = "How long from now would you like your message to be sent?";
+  const options = {
+    ...ik([
+      [butt("Instant", "menu=ending_remark&send_time=0")],
+      [
+        butt("10 - 15 min", "menu=ending_remark&send_time=1"),
+        butt("30 - 45 min", "menu=ending_remark&send_time=2"),
+        butt("1 - 2 hrs", "menu=ending_remark&send_time=3"),
+      ],
+      [butt("Back", "menu=start"), butt("Settings", "menu=settings")],
+    ]),
+  };
+  return { text, options };
+}, "send");
+
+const settings = new Menu(async (from, args) => {
+  const conf = await Confession.findOne({
+    where: { in_progress: true },
+    include: { model: User, where: { telegram_id: from.id } },
+  });
+  return;
+  const options = {
+    ...ik([
+      [
+        butt("Add Content Warning", "menu=cw"),
+        butt("Allow Responses", "menu=allow_res"),
+      ],
+      [
+        butt("Reply to Message", "menu=reply"),
+        butt("Select Auxillary Chat", "menu=chatlist"),
+      ],
+      [butt(""), butt("Cancel", `remove_confession=${conf.id}`)], //TODO remove confession query
+    ]),
+  };
+  return { text, options };
+}, "settings");
+
+const help = new Menu(() => {
+  const text =
+    "<b>NOTICE</b>\nThe bot has just been ported to node.js from python so many of the old features are missing. Ill probablly have them back within a week, but for now note that many features do not work.\n\n<b>To send a confession:</b>\nJust send a message here and then Confessions Bot wil give you time delay options (and a cancel option). Confessions Bot currently supports Text, . [other features to be restored soon] (Stickers, Images, Videos, Audio, Documents, Gifs, Voice, and Polls (/poll))";
+  const options = {
+    ...ik([
+      [butt("Commands", "menu=commands"), butt("About", "menu=about")],
+      [butt("Fellowdarbs info", "menu=fellowsinfo")],
+      [butt("Main menu", "menu=start")],
+    ]),
+  };
+  return { text, options };
+});
+
+const about = new Menu(() => {
+  const text =
+    "// TODO: put meaningful text here... just ask others what this is about for now";
+  const options = {
+    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
+  };
+  return { text, options };
+});
+
+const commands = new Menu(() => {
+  const text =
+    "<b>Commands:</b> \n/poll\nSend an anon poll to the confessions chats. [oof]\n/lock\nThe bot will no longer read your messages.[oof]\n/unlock\nThe bot will now read your messages.[oof]\n/cancel\nCancel current action.[oof]\n/feedback\nSend anon feedback to the creator (@njasi). Please be nice.[oof]\n/help\n...\n\n<b>Fellow Darbs Features:</b> \n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.[oof]\n/retire\nYou will be taken off of the fellows list.[oof]\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them.[oof]\n/fellowsinfo\nGet more information on the fellow Darb feature\n\n";
+  const options = {
+    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
+  };
+  return { text, options };
+});
+
+const fellowsinfo = new Menu(() => {
+  const text =
+    "<b>NOTICE</b>\nThe Fellow darbs feature is currently being renovated none of the commands listed here will do anything right now!\n\n<b>Fellow Darbs Commands:</b>\n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.\n/retire\nYou will be taken off of the fellows list.\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them\n\n<b>Purpose:</b>\nThis feature is for people who want support from others who are willing to listen, but are uncomfortable reaching out in person. <b>Do not ruin this for anyone who may need it</b>. I will obliterate all of your atoms if you do so.\n\n<b>Rules:</b>\nUse this for its intended purpose. If you are using it for another reason <b>please be kind</b>.\nThat is all.";
+  const options = {
+    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
+  };
+  return { text, options };
+});
+
+const ending_remark = new Menu((from, args) => {
+  let choices = ["oof"];
+  if (args.horny) {
+    choices = confession_responses.horny;
+  } else {
+    choices = confession_responses.normal;
+  }
+  const text = choices[Math.floor(Math.random() * choices.length)];
+  const options = { ...ik([[butt("Ok", "delete=true")]]) };
+  return { text, options };
+});
+
+const verify_accept = new Menu((from, args) => {
+  return {
+    text:
+      "<b>Congratulations!</b>\nYou've been approved to use Confessions Bot! \nPlease join the <a href='https://t.me/joinchat/EKj6oJQp9l9aPD5O'>Verification Chat</a>\n",
+    options: {
+      parse_mode: "HTML",
+      ...ik([
+        [butt("Help", "menu=help"), butt("About Confessions", "menu=about")],
+        [butt("Ok", "delete=true")],
+      ]),
+    },
+  };
+}, "verify_accept");
+
+const verify_reject = new Menu((from, args) => {
+  return {
+    text:
+      "We're sorry, it appears that you were denied access to Confessions Bot. You can reapply in a day.",
+    options: {
+      ...ik([[butt("Ok", "delete=true")]]),
+    },
+  };
+}, "verify_reject");
+
+const verify_ban = new Menu((from, args) => {
+  return {
+    text:
+      "We're sorry, it appears that you were banned from Confessions Bot. If you think this is a mistake, please say so in some Dabney chat. If you're not in any Dabney chats, perhaps you shouldn't be using the bot...",
+    options: {
+      ...ik([[butt("Ok", "delete=true")]]),
+    },
+  };
+}, "verify_ban");
+
+// TODO menu -> cw
+// TODO menu -> reply
+// TODO menu -> chatlist
+// TODO menu -> allow_res
+// TODO menu -> verify_update
 
 const MENUS = {
   start,
+  settings,
+  send,
+  ending_remark,
+  help,
+  about,
+  commands,
+  fellowsinfo,
   verify,
-  request_verify,
+  verify_request,
+  verify_accept,
+  verify_reject,
+  verify_ban,
 };
 
 module.exports = { MENUS, detectAndSwapMenu };

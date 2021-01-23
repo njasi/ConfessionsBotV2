@@ -33,20 +33,46 @@ const Confession = db.define("confession", {
   text: {
     type: Sequelize.TEXT,
   },
-  message_id: {
+  channel_message_id: {
     type: Sequelize.STRING,
+  },
+  reply_message: {
+    type: Sequelize.JSON,
+    set(val) {
+      try {
+        JSON.parse(val);
+        this.setDataValue("reply_message", val);
+      } catch (error) {
+        this.setDataValue("reply_message", JSON.stringify(val));
+      }
+    },
+    get() {
+      const storedValue = this.getDataValue("reply_message");
+      return JSON.parse(storedValue);
+    },
   },
   // file_id for if something is attached
   file_id: {
     type: Sequelize.STRING,
   },
-  send_by: {
-    type: Sequelize.DATE,
-    allowNull: true,
-  },
   in_progress: {
     type: Sequelize.BOOLEAN,
     defaultValue: true,
+  },
+  stage: {
+    type: Sequelize.ENUM(
+      "idle",
+      "wait_cw",
+      "confirm_cw",
+      "wait_reply",
+      "confirm_reply"
+    ),
+    defaultValue: "idle",
+    allowNull: true,
+  },
+  send_by: {
+    type: Sequelize.DATE,
+    allowNull: true,
   },
   menu_id: {
     type: Sequelize.STRING,

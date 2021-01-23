@@ -13,7 +13,6 @@ const Keyval = db.define("keyval", {
         JSON.parse(val);
         this.setDataValue("value", val);
       } catch (error) {
-        console.log(val, JSON.stringify(val));
         this.setDataValue("value", JSON.stringify(val));
       }
     },

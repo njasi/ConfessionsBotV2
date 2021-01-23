@@ -15,6 +15,10 @@ const User = db.define("user", {
     type: Sequelize.BOOLEAN,
     defaultValue: false,
   },
+  locked: {
+    type: Sequelize.BOOLEAN,
+    defaultValue: false,
+  },
   verification_status: {
     type: Sequelize.INTEGER,
     defaultValue: 0,
@@ -29,10 +33,6 @@ const User = db.define("user", {
   },
   poll_id: {
     type: Sequelize.STRING,
-  },
-  locked: {
-    type: Sequelize.BOOLEAN,
-    defaultValue: false,
   },
 });
 
@@ -62,6 +62,7 @@ const User = db.define("user", {
  *
  * 4:
  *  verification was forced by admin
+ *
  * */
 
 User.prototype.isAllowed = function () {

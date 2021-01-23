@@ -22,8 +22,66 @@ router.post(`/${process.env.BOT_TOKEN}`, (req, res, next) => {
   }
 });
 
-bot.on("poll", (answer, meta) => {
-  console.log(answer, meta);
+bot.on("poll", async (answer, meta) => {
+  const num = await User.count({
+    where: { verification_status: { [Op.gt]: 0 } },
+  });
+  const user = await User.findOne({ where: { poll_id: answer.id } });
+  // this must not be a verification poll
+  if (user == null) return;
+  // take out sluts votes
+  const active_voters =
+    answer.total_voter_count - answer.options[3].voter_count;
+  // poll voting needs have been met
+  if (active_voters >= Math.floor(Math.sqrt(num))) {
+    const { options } = answer;
+    const approve = options.slice(0, 3);
+    const disapprove = options.slice(4);
+    const a_c = approve.reduce((a, b) => a + b.voter_count, 0);
+    const d_c = disapprove.reduce((a, b) => a + b.voter_count, 0);
+    if (a_c > d_c) {
+      // lastiof to default to lowest verification status
+      const mapped = approve.map((e) => e.voter_count);
+      const index = mapped.lastIndexOf(Math.max(...mapped));
+      user.verification_status = index + 1;
+      MENUS.verify_accept.send(bot, { id: user.telegram_id });
+      bot.sendMessage(
+        process.env.VERIFY_CHAT_ID,
+        `<a href = "tg://user?id=${user.id}">${user.name}${
+          user.username == null ? "" : ` (@${user.username})`
+        }
+        </a> was approved to use @DabneyConfessionsBot!\n\nIf you have an issue with this please contact the admins.`,
+        { parse_mode: "HTML" }
+      );
+    } else if (d_c == active_voters && total_voter_count !== 0) {
+      // ban
+      user.verification_status = -1;
+      MENUS.verify_ban.send(bot, { id: user.telegram_id });
+      bot.sendMessage(
+        process.env.VERIFY_CHAT_ID,
+        `<a href = "tg://user?id=${user.id}">${user.name}${
+          user.username == null ? "" : ` (@${user.username})`
+        }
+        </a> was banned from @DabneyConfessionsBot.\n\nIf you have an issue with this please contact the admins.`,
+        { parse_mode: "HTML" }
+      );
+    } else {
+      // set as disapprove
+      user.verification_status = 0;
+      MENUS.verify_reject.send(bot, { id: user.telegram_id });
+      bot.sendMessage(
+        process.env.VERIFY_CHAT_ID,
+        `<a href = "tg://user?id=${user.id}">${user.name}${
+          user.username == null ? "" : ` (@${user.username})`
+        }
+        </a> was not approved to use @DabneyConfessionsBot. \n\nIf you have an issue with this please contact the admins.`,
+        { parse_mode: "HTML" }
+      );
+    }
+    // so retracting votes and revoting does nothing
+    user.poll_id = null;
+    await user.save();
+  }
 });
 
 bot.on("webhook_error", (error) => {
@@ -36,7 +94,7 @@ bot.on("webhook_error", (error) => {
 bot.on("polling_error", (err) => console.log(err));
 
 /**
- * remmoves people from the verification chat if they are not verified
+ * removes people from the verification chat if they are not verified
  */
 bot.on("new_chat_members", async (message, meta) => {
   for (user of message.new_chat_members) {
@@ -88,14 +146,12 @@ bot.on(
   "message",
   vMid(async (message, meta) => {
     if (isDm(message)) {
-      // TODO: make an In_progress confession
       const user = await User.findOne({
         where: { telegram_id: message.from.id },
       });
       if (user.locked) {
         return;
       }
-      console.log(meta);
       let confession;
       try {
         switch (meta.type) {
@@ -123,8 +179,14 @@ bot.on(
               });
             }
         }
-        // TODO: save the start menu message.message_id into the tuple
-        MENUS.start.send(bot, message.from, { from_command: false, message });
+        const res = await MENUS.start.send(bot, message.from, {
+          from_command: false,
+          message,
+        });
+        confession.menu_id = res.message_id;
+        await confession.save();
+        // https://t.me/c/1159774540/115908
+        // https://t.me/c/1159774540/115903
       } catch (error) {
         bot.sendMessage(
           process.env.ADMIN_ID,
@@ -171,6 +233,7 @@ bot.onText(
 // TODO: unlock command
 // TODO: about command
 // TODO: help command
+// TODO: /fellowsinfo
 
 bot.on("migrate_from_chat_id", (message, meta) => {
   bot.sendMessage(process.env.ADMIN_ID, JSON.stringify(message));
@@ -184,7 +247,10 @@ bot.on("callback_query", async (query) => {
   const params = params_from_string(query.data);
   const chat_id = query.message.chat.id;
   const message_id = query.message.message_id;
+
+  // admin only cb buttons
   if (params["rad"] == "true" && query.from.id == process.env.ADMIN_ID) {
+    // admin force approval
     if (params["approve_id"] !== null) {
       const user = await User.findOne({
         where: { poll_id: query.message.poll.id },
@@ -192,27 +258,95 @@ bot.on("callback_query", async (query) => {
       user.verification_status = 4;
       await user.save();
       bot.deleteMessage(chat_id, message_id);
-      bot.sendMessage(
-        user.telegram_id,
-        "<b>Congratulations!</b>\nYou've been approved to use Confessions Bot! \nPlease join the <a href='https://t.me/joinchat/EKj6oJQp9l9aPD5O'>Verification Chat</a>\n",
-        {
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: "Help", callback_data: "menu=help" },
-                { text: "About Confessions", callback_data: "menu=about" },
-              ],
-              [{ text: "Ok", callback_data: "delete=true" }],
-            ],
-          },
-        }
-      );
+      MENUS.verify_accept.send(bot, { id: user.telegram_id });
     }
     return;
   }
-  detectAndSwapMenu(query, params, bot);
 
+  // removes confession of id params['remove_confession'], before the menu swap as some swaps remove confessions
+  if (params["remove_confession"]) {
+    const conf_id = parseInt(params["remove_confession"]);
+    const conf = await Confession.findOne({
+      where: { id: conf_id },
+      include: { model: User, where: { telegram_id: query.from.id } },
+    });
+    if (conf == null) {
+      bot.answerCallbackQuery(query.id, {
+        text: `There was an error removing a Confession. The mod(s) have been notified`,
+        show_alert: true,
+      });
+      bot.sendMessage(
+        process.env.ADMIN_ID,
+        `User ${
+          query.from.id
+        } failed to remove confession ${conf_id} (no relation)\nAdditional User info:\n${JSON.stringify(
+          query.from,
+          null,
+          2
+        )}`
+      );
+      return;
+    } else {
+      try {
+        try {
+          bot.deleteMessage(query.from.id, conf.menu_id);
+        } catch (error) {
+          // sometimes the message has already been deleted
+        }
+        await conf.destroy();
+      } catch (error) {
+        bot.answerCallbackQuery(query.id, {
+          text: `There was an error removing a Confession. The mod(s) have been notified`,
+          show_alert: true,
+        });
+        bot.sendMessage(
+          process.env.ADMIN_ID,
+          `User ${query.from.id} failed to remove confession ${conf.id} (conf.destroy() error)\n\n${error.stack}`
+        );
+      }
+    }
+  }
+
+  // swaps to a new menu if the menu key is in params
+  detectAndSwapMenu(query, params, bot);
+  if (params["target_id"]) {
+    // TODO: set chat here.
+  }
+
+  // select the delay time at which the confession will be sent
+  if (params["send_time"]) {
+    let send_time = new Date();
+    const rnd = Math.random();
+    switch (params["send_time"]) {
+      case "0":
+        send_time -= 420 * 69;
+        break;
+      case "1":
+        send_time += 1000 * 5 * rnd + 1000 * 60 * 10;
+        break;
+      case "2":
+        send_time += 1000 * 15 * rnd + 1000 * 60 * 30;
+        break;
+      case "3":
+        send_time += 1000 * 60 * rnd + 1000 * 60 * 60;
+        break;
+    }
+    send_time = new Date(send_time);
+    const user = await User.findOne({ where: { telegram_id: query.from.id } });
+    const confession = await Confession.findOne({
+      where: { in_progress: true, userId: user.id },
+    });
+    if (confession == null) {
+      return;
+    }
+    confession.send_by = send_time;
+    confession.in_progress = false;
+    confession.stage = null;
+    confession.menu_id = null;
+    await confession.save();
+  }
+
+  // deletes messages from the bot when a user taps the button
   if (params["delete"] == "true") {
     bot.deleteMessage(chat_id, message_id);
   }

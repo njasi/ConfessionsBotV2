@@ -31,13 +31,12 @@ Chat.hasMany(Confession);
 Confession.belongsTo(Chat);
 
 User.hasMany(Confession);
-Confession.belongsTo(Chat);
-
+Confession.belongsTo(User);
 
 module.exports = {
   Keyval,
   User,
   Confession,
   Chat,
-  Message
+  Message,
 };

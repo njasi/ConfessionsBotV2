@@ -33,7 +33,6 @@ function vMid(cb, skip_on_command = false) {
 
 function cMid(cb) {
   async function _temp(message) {
-    console.log(message.chat.id);
     if (!isDm(message)) {
       if (message.text.match(/@DabneyConfessionsBot/)) {
         const sticker = await bot.sendSticker(
