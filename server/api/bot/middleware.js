@@ -45,7 +45,7 @@ function cMid(cb) {
             bot.deleteMessage(message.chat.id, sticker.message_id);
             bot.deleteMessage(message.chat.id, message.message_id);
           } catch (error) {}
-        }, 60000);
+        }, 15000);
       }
     } else {
       cb(message);

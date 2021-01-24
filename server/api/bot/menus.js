@@ -25,8 +25,10 @@ function ik(buttons) {
 
 async function swapMenu(query, params, bot) {
   const menu = MENUS[params.menu];
+  const user = await User.findOne({ where: { telegram_id: query.from.id } });
   const data = await menu.load(query.from, {
     bot,
+    user,
     ...params,
     query,
     from_swap: true,
@@ -250,21 +252,29 @@ const settings = new Menu(async (from, args) => {
     where: { in_progress: true },
     include: { model: User, where: { telegram_id: from.id } },
   });
-  return;
   const options = {
     ...ik([
       [
-        butt("Add Content Warning", "menu=cw"),
+        butt(conf.content_warning==null?"Add Content Warning":"Edit Content Warning", "menu=cw&set_stage=wait_cw"),
         butt("Allow Responses", "menu=allow_res"),
       ],
       [
         butt("Reply to Message", "menu=reply"),
         butt("Select Auxillary Chat", "menu=chatlist"),
       ],
-      [butt(""), butt("Cancel", `remove_confession=${conf.id}`)], //TODO remove confession query
+      [
+        butt("Back", "menu=start"),
+        butt("Cancel Confession", `remove_confession=${conf.id}`),
+      ],
     ]),
+    parse_mode: "HTML",
   };
-  return { text, options };
+  return {
+    text: `Use the buttons below to change the settings for your confession.\n\n<b>CW:</b>\n${
+      conf.content_warning != null ? conf.content_warning : "no content warning"
+    }`,
+    options,
+  };
 }, "settings");
 
 const help = new Menu(() => {
@@ -353,11 +363,136 @@ const verify_ban = new Menu((from, args) => {
   };
 }, "verify_ban");
 
-// TODO menu -> cw
+const toggle_lock = new Menu((from, args) => {
+  const l = args.user.locked;
+  if (args.from_command) {
+    if (args.command == "lock") {
+      return {
+        text: l
+          ? "You already have @DabneyConfessionsBot locked."
+          : "Lock @DabneyConfessionsBot? (you can unlock with /unlock)",
+        options: {
+          ...ik([
+            [
+              ...(l
+                ? [
+                    butt("Unlock it", "menu=toggle_lock_confirm&lock=false"),
+                    butt("Cancel", "delete=true"),
+                  ]
+                : [
+                    butt("Lock it", "menu=toggle_lock_confirm&lock=true"),
+                    butt("Cancel", "delete=true"),
+                  ]),
+            ],
+          ]),
+        },
+      };
+    } else {
+      return {
+        text: l
+          ? "Unlock @DabneyConfessionsBot? (you can lock it again with /lock)"
+          : "You already have @DabneyConfessionsBot unlocked.",
+        options: {
+          ...ik([
+            [
+              ...(l
+                ? [
+                    butt("Unlock it", "menu=toggle_lock_confirm&lock=false"),
+                    butt("Cancel", "delete=true"),
+                  ]
+                : [
+                    butt("Lock it", "menu=toggle_lock_confirm&lock=true"),
+                    butt("Cancel", "delete=true"),
+                  ]),
+            ],
+          ]),
+        },
+      };
+    }
+  } else {
+    return {
+      text: `You currently have @DabneyConfessionsBot ${
+        l ? "locked" : "unlocked"
+      }.`,
+      options: {
+        ...ik([
+          [
+            butt(l ? "Unlock" : "Lock", `menu=toggle_lock&lock=${l}`),
+            butt("Cancel", "delete=true"),
+          ],
+        ]),
+      },
+    };
+  }
+});
+
+const toggle_lock_confirm = new Menu(async (from, args) => {
+  args.user.locked = args.lock == "true";
+  await args.user.save();
+  return {
+    text: `@DabneyConfessionsBot is now ${
+      args.lock == "true"
+        ? "locked and will no longer read your messages."
+        : "unlocked and will now be able to read your messages."
+    }`,
+    options: { ...ik([[butt("Ok", "delete=true")]]) },
+  };
+});
+
+const cw = new Menu(async (from, args) => {
+  const conf = await Confession.findOne({
+    where: { userId: args.user.id, in_progress: true, stage: "wait_cw" },
+  });
+  let text =
+    "What would you like the warning to say?\n\nSend me a message to tell me the warning, or select cancel to go back.\n\n(it will send it in this format 'CW: {your message}')";
+  if (conf.content_warning !== null) {
+    text = `The Content Warning for this confession is currently: \n\nCW: ${conf.content_warning}. \n\nSend me a message to give me a new warning, or select cancel to go back.\n\n(it will send it in this format 'CW: {your message}')`;
+  }
+  return {
+    text,
+    options: {
+      ...ik([
+        [
+          butt("Cancel", "menu=settings&set_stage=idle"),
+          ...(conf.content_warning != null
+            ? [
+                butt(
+                  "Remove CW",
+                  `menu=settings&set_stage=idle&clear_cw=${conf.id}`
+                ),
+              ]
+            : []),
+        ],
+      ]),
+    }, // TODO set stage
+  };
+}, "cw");
+
+const cw_confirm = new Menu(async (from, args) => {
+  const confession = await Confession.findOne({
+    where: { userId: args.user.id, in_progress: true },
+  });
+  return {
+    text: `Is this content warning ok?\n\nCW: ${confession.content_warning}`,
+    options: {
+      ...ik([
+        [
+          butt("Yes", "menu=settings&set_stage=idle"),
+          butt(
+            "No, retry",
+            `menu=cw&set_stage=wait_cw&clear_cw=${confession.id}`
+          ),
+        ],
+      ]),
+    },
+  };
+});
+
 // TODO menu -> reply
 // TODO menu -> chatlist
 // TODO menu -> allow_res
 // TODO menu -> verify_update
+// TODO menu -> settings
 
 const MENUS = {
   start,
@@ -373,6 +508,10 @@ const MENUS = {
   verify_accept,
   verify_reject,
   verify_ban,
+  toggle_lock,
+  toggle_lock_confirm,
+  cw,
+  cw_confirm,
 };
 
-module.exports = { MENUS, detectAndSwapMenu };
+module.exports = { MENUS, detectAndSwapMenu, swapMenu };

@@ -50,7 +50,7 @@ bot.on("poll", async (answer, meta) => {
         `<a href = "tg://user?id=${user.id}">${user.name}${
           user.username == null ? "" : ` (@${user.username})`
         }
-        </a> was approved to use @DabneyConfessionsBot!\n\nIf you have an issue with this please contact the admins.`,
+        </a>a was approved to use @DabneyConfessionsBot!\n\nIf you have an issue with this please contact the admins.`,
         { parse_mode: "HTML" }
       );
     } else if (d_c == active_voters && total_voter_count !== 0) {
@@ -152,6 +152,23 @@ bot.on(
       if (user.locked) {
         return;
       }
+      const confs = await user.getConfessions();
+      const stages = confs.map((e) => e.stage);
+      const wait_cw_index = stages.indexOf("wait_cw");
+      if (wait_cw_index != -1) {
+        if (meta.type != "text") {
+          // TODO: tell them they bad
+          return;
+        } else if (message.text.length > 69) {
+          // TODO: tell them their cw is too long
+        }
+        confs[wait_cw_index].content_warning = message.text;
+        confs[wait_cw_index].stage = "confirm_cw";
+        await confs[wait_cw_index].save();
+        confs[wait_cw_index].swapMenu(MENUS.cw_confirm);
+        bot.deleteMessage(message.chat.id, message.message_id);
+        return;
+      }
       let confession;
       try {
         switch (meta.type) {
@@ -229,8 +246,29 @@ bot.onText(
   })
 );
 
-// TODO: lock command
-// TODO: unlock command
+/**
+ * Lock/Unlock commands
+ */
+
+bot.onText(
+  commandRegexDict.lock,
+  cvMid((message, reg) => {
+    MENUS.toggle_lock.send(bot, message.from, {
+      from_command: true,
+      command: "lock",
+    });
+  })
+);
+bot.onText(
+  commandRegexDict.unlock,
+  cvMid((message, reg) => {
+    MENUS.toggle_lock.send(bot, message.from, {
+      from_command: true,
+      command: "unlock",
+    });
+  })
+);
+
 // TODO: about command
 // TODO: help command
 // TODO: /fellowsinfo
@@ -261,6 +299,31 @@ bot.on("callback_query", async (query) => {
       MENUS.verify_accept.send(bot, { id: user.telegram_id });
     }
     return;
+  }
+
+  const shared_confession = await Confession.findOne({
+    where: {
+      in_progress: true,
+    },
+    include: {
+      model: User,
+      where: {
+        telegram_id: query.from.id,
+      },
+    },
+  });
+
+  if (params["clear_cw"]) {
+    shared_confession.content_warning = null;
+    const conf_id = parseInt(params["clear_cw"]);
+    const conf = await Confession.findByPk(conf_id);
+    conf.content_warning = null;
+    await conf.save();
+  }
+
+  if (params["set_stage"]) {
+    shared_confession.stage = params["set_stage"];
+    await shared_confession.save();
   }
 
   // removes confession of id params['remove_confession'], before the menu swap as some swaps remove confessions
@@ -309,6 +372,7 @@ bot.on("callback_query", async (query) => {
 
   // swaps to a new menu if the menu key is in params
   detectAndSwapMenu(query, params, bot);
+
   if (params["target_id"]) {
     // TODO: set chat here.
   }

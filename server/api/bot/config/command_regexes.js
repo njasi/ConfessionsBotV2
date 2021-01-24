@@ -1,6 +1,8 @@
 const commandRegexDict = {
   start: /^\/start($|@DabneyConfessionsBot$)/,
   verify: /^\/verify($|@DabneyConfessionsBot$)/,
+  lock: /^\/lock($|@DabneyConfessionsBot$)/,
+  unlock: /^\/unlock($|@DabneyConfessionsBot$)/,
 };
 
 const allCommands = Object.values(commandRegexDict).reduce((prev, current) => {

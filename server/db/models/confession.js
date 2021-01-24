@@ -2,6 +2,7 @@ const Sequelize = require("sequelize");
 const db = require("../db");
 const bot = require("../../api/bot/bot");
 const { Keyval } = require(".");
+// const { swapMenu } = require("../../api/bot/menus");
 
 const Confession = db.define("confession", {
   num: {
@@ -150,6 +151,24 @@ Confession.prototype.send = async function () {
       `There was an error sending confession #${num}:\n${error.stack}`
     );
   }
+};
+
+Confession.prototype.swapMenu = async function (new_menu) {
+  const user = await this.getUser();
+  const data = await new_menu.load(
+    { id: user.telegram_id },
+    {
+      bot,
+      user,
+    }
+  );
+
+  await bot.editMessageText(data.text, {
+    message_id: this.menu_id,
+    chat_id: user.telegram_id,
+    parse_mode: "HTML",
+    ...data.options,
+  });
 };
 
 module.exports = Confession;
