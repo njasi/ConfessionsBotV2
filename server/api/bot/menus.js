@@ -1,4 +1,4 @@
-const { User, Confession } = require("../../db/models");
+const { User, Confession, Chat } = require("../../db/models");
 const { getFullName } = require("./helpers");
 const { sendVerifyPoll } = require("./verify");
 const confession_responses = require("./config/confession_responses.json");
@@ -23,6 +23,9 @@ function ik(buttons) {
   return { reply_markup: { inline_keyboard: buttons } };
 }
 
+/**
+ * The function that dynamicly swaps menus based on queries and the user
+ */
 async function swapMenu(query, params, bot) {
   const menu = MENUS[params.menu];
   const user = await User.findOne({ where: { telegram_id: query.from.id } });
@@ -39,6 +42,7 @@ async function swapMenu(query, params, bot) {
     parse_mode: "HTML",
     ...data.options,
   });
+  // TODO: support for swapping menus that have media?
   // if (option.media) {
   //   await bot.editMessageMedia(option.media, {
   //     message_id: query.message.message_id,
@@ -47,6 +51,11 @@ async function swapMenu(query, params, bot) {
   // }
 }
 
+/**
+ * detects if a query has a menu tag and sawps to it if there is
+ *
+ * returns true if a swap occurs, false otherwise
+ */
 async function detectAndSwapMenu(query, params, bot) {
   if (query.data.match(/^menu=/)) {
     swapMenu(query, params, bot);
@@ -55,6 +64,9 @@ async function detectAndSwapMenu(query, params, bot) {
   return false;
 }
 
+/**
+ * the general Menu class so i dont have to replicate a lot of code.
+ */
 class Menu {
   constructor(get_data, key) {
     this.get_data = get_data;
@@ -250,13 +262,24 @@ const send = new Menu(async (from, args) => {
 const settings = new Menu(async (from, args) => {
   const conf = await Confession.findOne({
     where: { in_progress: true },
-    include: { model: User, where: { telegram_id: from.id } },
+    include: [
+      { model: User, where: { telegram_id: from.id } },
+      { model: Chat },
+    ],
   });
   const options = {
     ...ik([
       [
-        butt(conf.content_warning==null?"Add Content Warning":"Edit Content Warning", "menu=cw&set_stage=wait_cw"),
-        butt("Allow Responses", "menu=allow_res"),
+        butt(
+          conf.content_warning == null
+            ? "Add Content Warning"
+            : "Edit Content Warning",
+          "menu=cw&set_stage=wait_cw"
+        ),
+        butt(
+          `${conf.allow_responses ? "Disable" : "Allow"} Responses`,
+          `menu=settings&allow_res=${!conf.allow_responses}`
+        ),
       ],
       [
         butt("Reply to Message", "menu=reply"),
@@ -270,8 +293,18 @@ const settings = new Menu(async (from, args) => {
     parse_mode: "HTML",
   };
   return {
-    text: `Use the buttons below to change the settings for your confession.\n\n<b>CW:</b>\n${
-      conf.content_warning != null ? conf.content_warning : "no content warning"
+    text: `Use the buttons below to change the settings for your confession.\n\n<b>CW:</b>\n\t\t${
+      conf.content_warning != null
+        ? `✅ - ${conf.content_warning}`
+        : "❌ - no content warning set"
+    }\n<b>Responses:</b> \n\t\t${
+      conf.allow_responses ? "✅ - allowed" : "❌ - disabled"
+    }\n<b>Target Message:</b>\n\t\t${
+      conf.reply_message == null
+        ? "❌ - no reply set"
+        : `✅ - ${conf.reply_markup.text}`
+    }\n<b>Target Chat:</b>\n\t\t${
+      conf.chatId == null ? "❌ - no aux chat selected" : `✅ - ${conf.name}`
     }`,
     options,
   };
@@ -294,7 +327,7 @@ const about = new Menu(() => {
   const text =
     "// TODO: put meaningful text here... just ask others what this is about for now";
   const options = {
-    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
+    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]), // TODO: thing
   };
   return { text, options };
 });
@@ -317,7 +350,7 @@ const fellowsinfo = new Menu(() => {
   return { text, options };
 });
 
-const ending_remark = new Menu((from, args) => {
+const ending_remark = new Menu( async(from, args) => {
   let choices = ["oof"];
   if (args.horny) {
     choices = confession_responses.horny;
@@ -464,7 +497,7 @@ const cw = new Menu(async (from, args) => {
             : []),
         ],
       ]),
-    }, // TODO set stage
+    },
   };
 }, "cw");
 
@@ -488,9 +521,48 @@ const cw_confirm = new Menu(async (from, args) => {
   };
 });
 
+const cw_too_long = new Menu(async (from, args) => {
+  const confession = await Confession.findOne({
+    where: { userId: args.user.id, in_progress: true },
+  });
+  return {
+    text: `Your content warning was too long! The character limit is 69 characters.`,
+    options: {
+      ...ik([
+        [
+          butt(
+            "Retry",
+            `menu=cw&set_stage=wait_cw&clear_cw=${confession.id}`
+            ),
+          butt("Cancel", "menu=settings&set_stage=idle"),
+        ],
+      ]),
+    },
+  };
+});
+
+const cw_text_only = new Menu(async (from, args) => {
+  const confession = await Confession.findOne({
+    where: { userId: args.user.id, in_progress: true },
+  });
+  return {
+    text: `Content warnings must be text only.\n\nWould you like to try again?`,
+    options: {
+      ...ik([
+        [
+          butt(
+            "Retry",
+            `menu=cw&set_stage=wait_cw&clear_cw=${confession.id}`
+            ),
+          butt("Cancel", "menu=settings&set_stage=idle"),
+        ],
+      ]),
+    },
+  };
+});
+
 // TODO menu -> reply
 // TODO menu -> chatlist
-// TODO menu -> allow_res
 // TODO menu -> verify_update
 // TODO menu -> settings
 
@@ -512,6 +584,8 @@ const MENUS = {
   toggle_lock_confirm,
   cw,
   cw_confirm,
+  cw_too_long,
+  cw_text_only
 };
 
 module.exports = { MENUS, detectAndSwapMenu, swapMenu };

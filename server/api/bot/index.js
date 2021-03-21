@@ -131,12 +131,7 @@ bot.on("left_chat_member", async (message, meta) => {
  * seperate .on message used to check if any confessions should be sent
  */
 bot.on("message", async () => {
-  const to_send = await Confession.findAll({
-    where: {
-      send_by: { [Op.and]: { [Op.ne]: null, [Op.lt]: new Date() } },
-    },
-  });
-  [...to_send].forEach((conf) => conf.send());
+  Confession.send();
 });
 
 /**
@@ -156,17 +151,20 @@ bot.on(
       const stages = confs.map((e) => e.stage);
       const wait_cw_index = stages.indexOf("wait_cw");
       if (wait_cw_index != -1) {
+        bot.deleteMessage(message.from.id, message.message_id);
         if (meta.type != "text") {
-          // TODO: tell them they bad
+          confs[wait_cw_index].stage = "invaild_cw";
+          confs[wait_cw_index].swapMenu(MENUS.cw_text_only);
           return;
         } else if (message.text.length > 69) {
+          confs[wait_cw_index].swapMenu(MENUS.cw_too_long);
           // TODO: tell them their cw is too long
+          return;
         }
         confs[wait_cw_index].content_warning = message.text;
         confs[wait_cw_index].stage = "confirm_cw";
         await confs[wait_cw_index].save();
         confs[wait_cw_index].swapMenu(MENUS.cw_confirm);
-        bot.deleteMessage(message.chat.id, message.message_id);
         return;
       }
       let confession;
@@ -259,6 +257,7 @@ bot.onText(
     });
   })
 );
+
 bot.onText(
   commandRegexDict.unlock,
   cvMid((message, reg) => {
@@ -313,12 +312,17 @@ bot.on("callback_query", async (query) => {
     },
   });
 
-  if (params["clear_cw"]) {
+  if ("clear_cw" in params) {
     shared_confession.content_warning = null;
     const conf_id = parseInt(params["clear_cw"]);
     const conf = await Confession.findByPk(conf_id);
     conf.content_warning = null;
     await conf.save();
+  }
+
+  if ("allow_res" in params) {
+    shared_confession.allow_responses = params.allow_res == "true";
+    await shared_confession.save();
   }
 
   if (params["set_stage"]) {
@@ -401,6 +405,7 @@ bot.on("callback_query", async (query) => {
       where: { in_progress: true, userId: user.id },
     });
     if (confession == null) {
+      // for some reason the confession does not exist
       return;
     }
     confession.send_by = send_time;
@@ -408,6 +413,7 @@ bot.on("callback_query", async (query) => {
     confession.stage = null;
     confession.menu_id = null;
     await confession.save();
+    Confession.send();
   }
 
   // deletes messages from the bot when a user taps the button

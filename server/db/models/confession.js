@@ -1,7 +1,8 @@
 const Sequelize = require("sequelize");
 const db = require("../db");
 const bot = require("../../api/bot/bot");
-const { Keyval } = require(".");
+const Keyval = require("./keyval");
+
 // const { swapMenu } = require("../../api/bot/menus");
 
 const Confession = db.define("confession", {
@@ -56,6 +57,10 @@ const Confession = db.define("confession", {
   file_id: {
     type: Sequelize.STRING,
   },
+  allow_responses: {
+    type: Sequelize.BOOLEAN,
+    defaultValue: false,
+  },
   in_progress: {
     type: Sequelize.BOOLEAN,
     defaultValue: true,
@@ -66,7 +71,8 @@ const Confession = db.define("confession", {
       "wait_cw",
       "confirm_cw",
       "wait_reply",
-      "confirm_reply"
+      "confirm_reply",
+      "invaild_cw"
     ),
     defaultValue: "idle",
     allowNull: true,
@@ -92,8 +98,9 @@ async function send(confession, chat_id, num) {
       if (confession.content_warning !== null) {
         return await bot.sendMessage(
           chat_id,
-          text_add_prefix(confession.content_warning, num),
+          "tetst\n" + text_add_prefix(confession.content_warning, num),
           {
+            parse_mode: "HTML",
             reply_markup: {
               inline_keyboard: [
                 [
@@ -107,7 +114,7 @@ async function send(confession, chat_id, num) {
           }
         );
       } else {
-        return await bot.sendMessage(chat_id, text);
+        return await bot.sendMessage(chat_id, text, { parse_mode: "HTML" });
       }
     }
     default: {
@@ -118,7 +125,7 @@ async function send(confession, chat_id, num) {
 
 Confession.prototype.send = async function () {
   const cNum = await Keyval.findOne({
-    where: { key: "next_confession_number" },
+    where: { key: "num" },
   });
   const num = cNum.value;
   try {
@@ -138,13 +145,16 @@ Confession.prototype.send = async function () {
       send(this, process.env.CONFESSIONS_CHAT_ID, num);
       send(this, process.env.CONFESSIONS_CHANNEL_ID, num);
     }
+    // stickers are not counted as confessions, just spam lol
     if (this.type != "sticker") {
       cNum.value++;
       await cNum.save();
-      confession.send_by = null;
-      confession.num = num;
-      await confession.save();
+      this.num = num;
+    } else {
+      // TODO: should stickers be saved or just removed?
     }
+    this.send_by = null;
+    await this.save();
   } catch (error) {
     bot.sendMessage(
       process.env.ADMIN_ID,
@@ -169,6 +179,23 @@ Confession.prototype.swapMenu = async function (new_menu) {
     parse_mode: "HTML",
     ...data.options,
   });
+};
+
+/**
+ * sends all messages that are due to be sent
+ */
+Confession.send = async function () {
+  const to_send = await this.findAll({
+    where: {
+      send_by: {
+        [Sequelize.Op.and]: {
+          [Sequelize.Op.ne]: null,
+          [Sequelize.Op.lt]: new Date(),
+        },
+      },
+    },
+  });
+  [...to_send].forEach((conf) => conf.send());
 };
 
 module.exports = Confession;
