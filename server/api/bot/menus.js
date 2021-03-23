@@ -2,6 +2,7 @@ const { User, Confession, Chat } = require("../../db/models");
 const { getFullName } = require("./helpers");
 const { sendVerifyPoll } = require("./verify");
 const confession_responses = require("./config/confession_responses.json");
+
 /**
  * haha butt
  * returns a formatted button for me so I can be lazy
@@ -106,13 +107,6 @@ class Menu {
 }
 
 const start = new Menu(async (from, args) => {
-  let text = `Welcome ${
-    from.first_name
-  }! Please use the buttons below to navigate the menus${
-    args.from_command
-      ? ". If you want to send a confession just message me normally"
-      : " and configure your confession"
-  }.`;
   const confs = await Confession.findAll({
     where: { in_progress: true },
     include: {
@@ -123,6 +117,18 @@ const start = new Menu(async (from, args) => {
     },
     order: [["updatedAt", "DESC"]],
   });
+  let active = true;
+  if (confs[0] == null) {
+    active = false;
+  }
+
+  let text = `Welcome ${
+    from.first_name
+  }! Please use the buttons below to navigate the menus${
+    args.from_command || !active
+      ? ". \n\nIf you want to send a confession just message me normally"
+      : " and configure your confession"
+  }.`;
   if (confs.length == 2) {
     text =
       "It seems you already have an active confession. Would you like to discard the older confession and continue with this one?";
@@ -151,7 +157,7 @@ const start = new Menu(async (from, args) => {
   }
   const options = {
     ...ik([
-      ...(args.from_command
+      ...(args.from_command || !active
         ? []
         : [
             [
@@ -161,13 +167,19 @@ const start = new Menu(async (from, args) => {
           ]),
       [
         butt("Help", "menu=help"),
-        butt("Cancel", `remove_confession=${confs[0].id}`),
+        butt(
+          "Cancel",
+          args.from_command || !active
+            ? `delete=true`
+            : `remove_confession=${confs[0].id}`
+        ),
       ],
     ]),
-    ...(args.from_command || args.from_swap
+    ...(args.from_command || args.from_swap || !active
       ? {}
       : { reply_to_message_id: args.message.message_id }),
   };
+
   return { text, options };
 }, "start");
 
@@ -276,19 +288,20 @@ const settings = new Menu(async (from, args) => {
             : "Edit Content Warning",
           "menu=cw&set_stage=wait_cw"
         ),
-        butt(
-          `${conf.allow_responses ? "Disable" : "Allow"} Responses`,
-          `menu=settings&allow_res=${!conf.allow_responses}`
-        ),
+        ...(conf.type == "sticker"
+          ? []
+          : [
+              butt(
+                `${conf.allow_responses ? "Disable" : "Allow"} Responses`,
+                `menu=settings&allow_res=${!conf.allow_responses}`
+              ),
+            ]),
       ],
       [
         butt("Reply to Message", "menu=reply"),
         butt("Select Auxillary Chat", "menu=chatlist"),
       ],
-      [
-        butt("Back", "menu=start"),
-        butt("Cancel Confession", `remove_confession=${conf.id}`),
-      ],
+      [butt("Back", "menu=start"), butt("Send Confession", `menu=send`)],
     ]),
     parse_mode: "HTML",
   };
@@ -297,8 +310,12 @@ const settings = new Menu(async (from, args) => {
       conf.content_warning != null
         ? `✅ - ${conf.content_warning}`
         : "❌ - no content warning set"
-    }\n<b>Responses:</b> \n\t\t${
-      conf.allow_responses ? "✅ - allowed" : "❌ - disabled"
+    }${
+      conf.type == "sticker"
+        ? ""
+        : `\n<b>Responses:</b> \n\t\t${
+            conf.allow_responses ? "✅ - allowed" : "❌ - disabled"
+          }`
     }\n<b>Target Message:</b>\n\t\t${
       conf.reply_message == null
         ? "❌ - no reply set"
@@ -312,11 +329,11 @@ const settings = new Menu(async (from, args) => {
 
 const help = new Menu(() => {
   const text =
-    "<b>NOTICE</b>\nThe bot has just been ported to node.js from python so many of the old features are missing. Ill probablly have them back within a week, but for now note that many features do not work.\n\n<b>To send a confession:</b>\nJust send a message here and then Confessions Bot wil give you time delay options (and a cancel option). Confessions Bot currently supports Text, . [other features to be restored soon] (Stickers, Images, Videos, Audio, Documents, Gifs, Voice, and Polls (/poll))";
+    "<b>To send a confession:</b>\nJust send a message here and then Confessions Bot will give you options to configure and send your confession (and a cancel option). Confessions Bot currently supports Text, Stickers, Images, Videos, Audio, Documents, Gifs, Voice, and Polls\n\n<b>Sending polls:</b>\nUsing the polls functionality of the bot is easier than ever before! Simply send a poll to the bot and it will replicate it when it sends.";
   const options = {
     ...ik([
       [butt("Commands", "menu=commands"), butt("About", "menu=about")],
-      [butt("Fellowdarbs info", "menu=fellowsinfo")],
+      [butt("Fellowdarbs info", "menu=fellows_info")],
       [butt("Main menu", "menu=start")],
     ]),
   };
@@ -334,14 +351,14 @@ const about = new Menu(() => {
 
 const commands = new Menu(() => {
   const text =
-    "<b>Commands:</b> \n/poll\nSend an anon poll to the confessions chats. [oof]\n/lock\nThe bot will no longer read your messages.[oof]\n/unlock\nThe bot will now read your messages.[oof]\n/cancel\nCancel current action.[oof]\n/feedback\nSend anon feedback to the creator (@njasi). Please be nice.[oof]\n/help\n...\n\n<b>Fellow Darbs Features:</b> \n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.[oof]\n/retire\nYou will be taken off of the fellows list.[oof]\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them.[oof]\n/fellowsinfo\nGet more information on the fellow Darb feature\n\n";
+    "<b>Commands:</b> \n/poll\nSend an anon poll to the confessions chats. \n/lock\nThe bot will no longer read your messages.\n/unlock\nThe bot will now read your messages.\n/cancel\nCancel current action.[oof]\n/feedback\nSend anon feedback to the creator (@njasi). Please be nice.[oof]\n/help,/about\n...\n\n<b>Fellow Darbs Features:</b> \n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.[oof]\n/retire\nYou will be taken off of the fellows list.[oof]\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them.[oof]\n/fellowsinfo\nGet more information on the fellow Darb feature\n\n";
   const options = {
     ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
   };
   return { text, options };
 });
 
-const fellowsinfo = new Menu(() => {
+const fellows_info = new Menu(() => {
   const text =
     "<b>NOTICE</b>\nThe Fellow darbs feature is currently being renovated none of the commands listed here will do anything right now!\n\n<b>Fellow Darbs Commands:</b>\n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.\n/retire\nYou will be taken off of the fellows list.\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them\n\n<b>Purpose:</b>\nThis feature is for people who want support from others who are willing to listen, but are uncomfortable reaching out in person. <b>Do not ruin this for anyone who may need it</b>. I will obliterate all of your atoms if you do so.\n\n<b>Rules:</b>\nUse this for its intended purpose. If you are using it for another reason <b>please be kind</b>.\nThat is all.";
   const options = {
@@ -350,7 +367,7 @@ const fellowsinfo = new Menu(() => {
   return { text, options };
 });
 
-const ending_remark = new Menu( async(from, args) => {
+const ending_remark = new Menu(async (from, args) => {
   let choices = ["oof"];
   if (args.horny) {
     choices = confession_responses.horny;
@@ -530,10 +547,7 @@ const cw_too_long = new Menu(async (from, args) => {
     options: {
       ...ik([
         [
-          butt(
-            "Retry",
-            `menu=cw&set_stage=wait_cw&clear_cw=${confession.id}`
-            ),
+          butt("Retry", `menu=cw&set_stage=wait_cw&clear_cw=${confession.id}`),
           butt("Cancel", "menu=settings&set_stage=idle"),
         ],
       ]),
@@ -550,10 +564,7 @@ const cw_text_only = new Menu(async (from, args) => {
     options: {
       ...ik([
         [
-          butt(
-            "Retry",
-            `menu=cw&set_stage=wait_cw&clear_cw=${confession.id}`
-            ),
+          butt("Retry", `menu=cw&set_stage=wait_cw&clear_cw=${confession.id}`),
           butt("Cancel", "menu=settings&set_stage=idle"),
         ],
       ]),
@@ -561,31 +572,49 @@ const cw_text_only = new Menu(async (from, args) => {
   };
 });
 
+const poll_info = new Menu(async (from, args) => {
+  return {
+    text: `Using the polls functionality of the bot is easier than ever before! Simply send a poll to the bot and it will replicate it when it sends.`,
+    options: {
+      ...ik([[butt("Ok", "delete=true")]]),
+    },
+  };
+}, "poll_info");
+
+
+const fellows_privacy = new Menu(async (from, args)=>{
+  return{
+
+  }
+})
+
 // TODO menu -> reply
 // TODO menu -> chatlist
 // TODO menu -> verify_update
 // TODO menu -> settings
 
 const MENUS = {
-  start,
-  settings,
-  send,
-  ending_remark,
-  help,
-  about,
-  commands,
-  fellowsinfo,
-  verify,
-  verify_request,
-  verify_accept,
-  verify_reject,
-  verify_ban,
-  toggle_lock,
-  toggle_lock_confirm,
-  cw,
-  cw_confirm,
-  cw_too_long,
-  cw_text_only
+  start,                  // the start menu
+  settings,               // settings menu
+  send,                   // send confession / time delay options
+  ending_remark,          // menu that you see after confessing, random remark
+  help,                   // main help menu
+  about,                  // brings up abt text for the bot
+  commands,               // gives a list of commands
+  verify,                 // asks you if you want to veriy
+  verify_request,         // tells you your request to verify was sent
+  verify_accept,          // shows that your verification was accepted
+  verify_reject,          // shows your verification has been rejected
+  verify_ban,             // shows that have been banned after attempting to verify
+  toggle_lock,            // menu that gives you the toggle lock btn
+  toggle_lock_confirm,    // menu to confirm the toggle lock
+  cw,                     // asks if you want to set cw or cancel
+  cw_confirm,             // menu shows you your cw and asks if it is good
+  cw_too_long,            // error menu that says a cw is too long
+  cw_text_only,           // error menu that says cws can only be text
+  poll_info,              // info abt how to use the polls
+  fellows_info,            // help/about menu just for the fellows section
+  fellows_privacy         // select if you want your name to be known when messaging someone
 };
 
 module.exports = { MENUS, detectAndSwapMenu, swapMenu };

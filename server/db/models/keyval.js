@@ -30,5 +30,7 @@ module.exports = Keyval;
  * num : int
  * current confession number (the next confession to be sent will be assigned this)
  *
+ * h_num : int
+ * current horny confession number (like num but horny confessions)
  *
  */

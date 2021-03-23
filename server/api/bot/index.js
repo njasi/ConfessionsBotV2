@@ -4,7 +4,7 @@ const bot = require("./bot");
 const { isDm, params_from_string } = require("./helpers");
 const { verifyUser } = require("./verify");
 const { commandRegexDict } = require("./config/command_regexes");
-const { MENUS, detectAndSwapMenu } = require("./menus");
+const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus");
 const { User, Confession, Keyval } = require("../../db/models");
 const { Op } = require("sequelize");
 const { cMid, vMid, cvMid } = require("./middleware");
@@ -158,7 +158,6 @@ bot.on(
           return;
         } else if (message.text.length > 69) {
           confs[wait_cw_index].swapMenu(MENUS.cw_too_long);
-          // TODO: tell them their cw is too long
           return;
         }
         confs[wait_cw_index].content_warning = message.text;
@@ -169,8 +168,13 @@ bot.on(
       }
       let confession;
       try {
+        const general = {
+          type: meta.type,
+          text: message.caption == null ? message.text : message.caption,
+          userId: user.id,
+        };
         switch (meta.type) {
-          case "text":
+          case "text": {
             if (message.text.length > 4062) {
               bot.sendMessage(
                 message.from.id,
@@ -187,12 +191,52 @@ bot.on(
                 }
               );
             } else {
-              confession = await Confession.create({
-                type: meta.type,
-                text: message.text,
-                userId: user.id,
-              });
+              confession = await Confession.create(general);
             }
+            break;
+          }
+          case "animation":
+          case "audio":
+          case "document":
+          case "sticker":
+          case "video":
+          case "voice": {
+            confession = await Confession.create({
+              ...general,
+              file_id: message[meta.type].file_id,
+            });
+            break;
+          }
+          case "photo": {
+            confession = await Confession.create({
+              ...general,
+              file_id: message.photo[message.photo.length - 1].file_id,
+            });
+            break;
+          }
+          case "poll": {
+            // poll is a bit odd, we wil save the message_id as the
+            // file_id and copy the message and forward it later
+            confession = await Confession.create({
+              ...general,
+              file_id: message.message_id,
+            });
+            break;
+          }
+          default: {
+            bot.sendMessage(
+              message.from.id,
+              "Confessions bot does not currently support this type of message.",
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: "Ok", callback_data: "delete=true" }],
+                  ],
+                },
+                reply_to_message_id: message.message_id,
+              }
+            );
+          }
         }
         const res = await MENUS.start.send(bot, message.from, {
           from_command: false,
@@ -205,7 +249,13 @@ bot.on(
       } catch (error) {
         bot.sendMessage(
           process.env.ADMIN_ID,
-          `Someone attempted to send a ${meta.type} through confessions bot.`
+          `${user.name} (${message.from.id}) attempted to send a ${meta.type} through confessions bot.\nError:\n:${error.stack}`,
+          {
+            reply_markup: {
+              inline_keyboard: [[{ text: "Ok", callback_data: "delete=true" }]],
+            },
+            reply_to_message_id: message.message_id,
+          }
         );
         bot.sendMessage(
           message.from.id,
@@ -268,9 +318,33 @@ bot.onText(
   })
 );
 
-// TODO: about command
-// TODO: help command
-// TODO: /fellowsinfo
+bot.onText(
+  commandRegexDict.poll,
+  cvMid((message, reg) => {
+    MENUS.poll_info.send(bot, message.from, { from_command: true });
+  })
+);
+
+bot.onText(
+  commandRegexDict.help,
+  cvMid((message, reg) => {
+    MENUS.help.send(bot, message.from, { from_command: true });
+  })
+);
+
+bot.onText(
+  commandRegexDict.about,
+  cvMid((message, reg) => {
+    MENUS.about.send(bot, message.from, { from_command: true });
+  })
+);
+
+bot.onText(
+  commandRegexDict.fellows_info,
+  cvMid((message, reg) => {
+    MENUS.fellows_info.send(bot, message.from, { from_command: true });
+  })
+);
 
 bot.on("migrate_from_chat_id", (message, meta) => {
   bot.sendMessage(process.env.ADMIN_ID, JSON.stringify(message));
@@ -374,6 +448,25 @@ bot.on("callback_query", async (query) => {
     }
   }
 
+  // user tapped view content button on a cw confession, send them the message
+  if (params.cw_confession_id) {
+    const cw_id = parseInt(params["cw_confession_id"]);
+    conf = await Confession.findByPk(cw_id);
+    if (conf == null) {
+      bot.answerCallbackQuery(query.id, {
+        text:
+          "It seems that this confession was removed... \n\n(or is realy old)",
+        show_alert: true,
+      });
+      return;
+    }
+    await conf.send_helper(query.from.id, (cw_forward = true));
+    bot.answerCallbackQuery(query.id, {
+      text: `The confession has been sent to your dms with the bot.`,
+      show_alert: true,
+    });
+  }
+
   // swaps to a new menu if the menu key is in params
   detectAndSwapMenu(query, params, bot);
 
@@ -419,6 +512,14 @@ bot.on("callback_query", async (query) => {
   // deletes messages from the bot when a user taps the button
   if (params["delete"] == "true") {
     bot.deleteMessage(chat_id, message_id);
+  }
+
+  if (params["message_from"]) {
+    // someone is contacting a confessor
+    if (params["conf"]) {
+      MENUS.fellows_privacy.send();
+      return;
+    }
   }
 });
 

@@ -85,52 +85,136 @@ const Confession = db.define("confession", {
     type: Sequelize.STRING,
     allowNull: true,
   },
+  message_info: {
+    type: Sequelize.JSON,
+    allowNull: true,
+  },
 });
 
-const text_add_prefix = (text, num) => {
-  return `<b>Confession #${num}:</b>\n${text}`;
+const text_add_prefix = (text, num, cw = false, sticker = false) => {
+  if (sticker) {
+    return `<b>Content Warning Sticker...</b>\nCW:\t${text}`;
+  }
+  return `<b>Confession #${num}:</b>\n${
+    cw ? `CW:\t${text}` : text == null ? "" : text
+  }`;
 };
 
-async function send(confession, chat_id, num) {
-  const text = text_add_prefix(confession.text, num);
-  switch (confession.type) {
-    case "text": {
-      if (confession.content_warning !== null) {
-        return await bot.sendMessage(
-          chat_id,
-          "tetst\n" + text_add_prefix(confession.content_warning, num),
-          {
-            parse_mode: "HTML",
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "View Content",
-                    callback_data: `cw_confession_num=${num}`, // TODO: cw confession num in query stuff
-                  },
-                ],
-              ],
-            },
-          }
-        );
-      } else {
-        return await bot.sendMessage(chat_id, text, { parse_mode: "HTML" });
+const method_mappings = {
+  animation: bot.sendAnimation,
+  audio: bot.sendAudio,
+  document: bot.sendDocument,
+  photo: bot.sendPhoto,
+  video: bot.sendVideo,
+  voice: bot.sendVoice,
+};
+
+Confession.prototype.send_helper = async function (
+  chat_id,
+  cw_forward = false
+) {
+  let user = null;
+  if (this.allow_responses) {
+    user = await this.getUser();
+  }
+  const text = text_add_prefix(this.text, this.num);
+  console.log(`SEND_HELPER(${chat_id}, ${this.num}, ${cw_forward}):\n`);
+  // all cw messages will be text, unless the content is
+  // actualy being sent somewhere ie cw_forward = true
+  if (!cw_forward && this.content_warning !== null) {
+    return await bot.sendMessage(
+      chat_id,
+      text_add_prefix(
+        this.content_warning,
+        this.num,
+        (cw = true),
+        (sticker = this.type == "sticker")
+      ),
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "View Content",
+                callback_data: `cw_confession_id=${this.id}`,
+              },
+            ],
+            ...(this.allow_responses
+              ? [
+                  [
+                    {
+                      text: "Contact OP",
+                      callback_data: `message_from=${user.telegram_id}&conf=${this.num}`,
+                    },
+                  ],
+                ]
+              : []),
+          ],
+        },
       }
+    );
+  }
+  // cw_forward = true or no cw
+  const options = {
+    parse_mode: "HTML",
+    ...(this.allow_responses
+      ? {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Contact OP",
+                  // url: "t.me/test123420bot",
+                  callback_data: `message_from=${user.telegram_id}&conf=${this.num}`,
+                },
+              ],
+            ],
+          },
+        }
+      : {}),
+  };
+  switch (this.type) {
+    case "text": {
+      return await bot.sendMessage(chat_id, text, {
+        ...options,
+      });
+    }
+    case "sticker": {
+      return await bot.sendSticker(chat_id, this.file_id);
+    }
+    case "animation":
+    case "audio":
+    case "document":
+    case "photo":
+    case "video":
+    case "voice": {
+      return await method_mappings[this.type](chat_id, this.file_id, {
+        caption: text,
+        ...options,
+      });
+    }
+    case "poll": {
+      const u = await this.getUser();
+      return await bot.copyMessage(chat_id, u.telegram_id, this.file_id, {
+        ...options,
+      });
     }
     default: {
       return null;
     }
   }
-}
+};
 
 Confession.prototype.send = async function () {
   const cNum = await Keyval.findOne({
     where: { key: "num" },
   });
   const num = cNum.value;
+  this.num = num;
   try {
     if (this.type == "poll") {
-      const poll = await send(this, process.env.CONFESSIONS_CHAT_ID, num);
+      const poll = await this.send_helper(process.env.CONFESSIONS_CHAT_ID);
       bot.forwardMessage(
         process.env.CONFESSIONS_CHANNEL_ID,
         process.env.CONFESSIONS_CHAT_ID,
@@ -141,9 +225,21 @@ Confession.prototype.send = async function () {
         process.env.CONFESSIONS_CHAT_ID,
         poll.message_id
       );
+      if (this.chat_id) {
+        chat = await this.getChat();
+        bot.forwardMessage(
+          chat.chat_id,
+          process.env.CONFESSIONS_CHAT_ID,
+          poll.message_id
+        );
+      }
     } else {
-      send(this, process.env.CONFESSIONS_CHAT_ID, num);
-      send(this, process.env.CONFESSIONS_CHANNEL_ID, num);
+      this.send_helper(process.env.CONFESSIONS_CHAT_ID);
+      this.send_helper(process.env.CONFESSIONS_CHANNEL_ID);
+      if (this.chat_id) {
+        chat = await this.getChat();
+        this.send_helper(chat.chat_id);
+      }
     }
     // stickers are not counted as confessions, just spam lol
     if (this.type != "sticker") {
@@ -152,6 +248,11 @@ Confession.prototype.send = async function () {
       this.num = num;
     } else {
       // TODO: should stickers be saved or just removed?
+      // for now im just gonna remove the ones without content warning buttons
+      if (this.cw == null) {
+        await this.destroy();
+        return;
+      }
     }
     this.send_by = null;
     await this.save();

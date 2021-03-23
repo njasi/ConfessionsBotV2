@@ -3,6 +3,11 @@ const commandRegexDict = {
   verify: /^\/verify($|@DabneyConfessionsBot$)/,
   lock: /^\/lock($|@DabneyConfessionsBot$)/,
   unlock: /^\/unlock($|@DabneyConfessionsBot$)/,
+  poll: /^\/poll($|@DabneyConfessionsBot$)/,
+  register: /^\/register($|@DabneyConfessionsBot$)/,
+  help: /^\/help($|@DabneyConfessionsBot$)/,
+  about: /^\/about($|@DabneyConfessionsBot$)/,
+  fellowsinfo: /^\/fellowsinfo($|@DabneyConfessionsBot$)/,
 };
 
 const allCommands = Object.values(commandRegexDict).reduce((prev, current) => {
