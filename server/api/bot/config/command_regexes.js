@@ -7,7 +7,7 @@ const commandRegexDict = {
   register: /^\/register($|@DabneyConfessionsBot$)/,
   help: /^\/help($|@DabneyConfessionsBot$)/,
   about: /^\/about($|@DabneyConfessionsBot$)/,
-  fellowsinfo: /^\/fellowsinfo($|@DabneyConfessionsBot$)/,
+  fellows_info: /^\/fellowsinfo($|@DabneyConfessionsBot$)/
 };
 
 const allCommands = Object.values(commandRegexDict).reduce((prev, current) => {

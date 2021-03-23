@@ -374,9 +374,18 @@ const ending_remark = new Menu(async (from, args) => {
   } else {
     choices = confession_responses.normal;
   }
-  const text = choices[Math.floor(Math.random() * choices.length)];
-  const options = { ...ik([[butt("Ok", "delete=true")]]) };
-  return { text, options };
+  const choice = choices[Math.floor(Math.random() * choices.length)];
+  let formatted_btns = [];
+
+  const btns =
+    choice[1] != null
+      ? choice[1].map((txt) => butt(txt, "delete=true"))
+      : [butt("Ok", "delete=true")];
+  for (let i = 0, j = btns.length / 3; i < btns.length; i += 3) {
+    formatted_btns.push(btns.slice(i, i + 3));
+  }
+  const options = { ...ik(formatted_btns) };
+  return { text: choice[0], options };
 });
 
 const verify_accept = new Menu((from, args) => {
@@ -581,12 +590,9 @@ const poll_info = new Menu(async (from, args) => {
   };
 }, "poll_info");
 
-
-const fellows_privacy = new Menu(async (from, args)=>{
-  return{
-
-  }
-})
+const fellows_privacy = new Menu(async (from, args) => {
+  return {};
+});
 
 // TODO menu -> reply
 // TODO menu -> chatlist
@@ -594,27 +600,27 @@ const fellows_privacy = new Menu(async (from, args)=>{
 // TODO menu -> settings
 
 const MENUS = {
-  start,                  // the start menu
-  settings,               // settings menu
-  send,                   // send confession / time delay options
-  ending_remark,          // menu that you see after confessing, random remark
-  help,                   // main help menu
-  about,                  // brings up abt text for the bot
-  commands,               // gives a list of commands
-  verify,                 // asks you if you want to veriy
-  verify_request,         // tells you your request to verify was sent
-  verify_accept,          // shows that your verification was accepted
-  verify_reject,          // shows your verification has been rejected
-  verify_ban,             // shows that have been banned after attempting to verify
-  toggle_lock,            // menu that gives you the toggle lock btn
-  toggle_lock_confirm,    // menu to confirm the toggle lock
-  cw,                     // asks if you want to set cw or cancel
-  cw_confirm,             // menu shows you your cw and asks if it is good
-  cw_too_long,            // error menu that says a cw is too long
-  cw_text_only,           // error menu that says cws can only be text
-  poll_info,              // info abt how to use the polls
-  fellows_info,            // help/about menu just for the fellows section
-  fellows_privacy         // select if you want your name to be known when messaging someone
+  start, // the start menu
+  settings, // settings menu
+  send, // send confession / time delay options
+  ending_remark, // menu that you see after confessing, random remark
+  help, // main help menu
+  about, // brings up abt text for the bot
+  commands, // gives a list of commands
+  verify, // asks you if you want to veriy
+  verify_request, // tells you your request to verify was sent
+  verify_accept, // shows that your verification was accepted
+  verify_reject, // shows your verification has been rejected
+  verify_ban, // shows that have been banned after attempting to verify
+  toggle_lock, // menu that gives you the toggle lock btn
+  toggle_lock_confirm, // menu to confirm the toggle lock
+  cw, // asks if you want to set cw or cancel
+  cw_confirm, // menu shows you your cw and asks if it is good
+  cw_too_long, // error menu that says a cw is too long
+  cw_text_only, // error menu that says cws can only be text
+  poll_info, // info abt how to use the polls
+  fellows_info, // help/about menu just for the fellows section
+  fellows_privacy, // select if you want your name to be known when messaging someone
 };
 
 module.exports = { MENUS, detectAndSwapMenu, swapMenu };

@@ -8,6 +8,7 @@ const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus");
 const { User, Confession, Keyval } = require("../../db/models");
 const { Op } = require("sequelize");
 const { cMid, vMid, cvMid } = require("./middleware");
+const { send } = require("../../db/models/confession");
 module.exports = router;
 
 /**
@@ -476,7 +477,7 @@ bot.on("callback_query", async (query) => {
 
   // select the delay time at which the confession will be sent
   if (params["send_time"]) {
-    let send_time = new Date();
+    let send_time = Date.now();
     const rnd = Math.random();
     switch (params["send_time"]) {
       case "0":
