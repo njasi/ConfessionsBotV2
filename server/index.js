@@ -84,6 +84,8 @@ const syncDb = () => db.sync();
 async function bootApp() {
   // TODO: sessionstore sync
   // await sessionStore.sync();
+  // await sequelize.drop();
+  // db.sync({ force: true });
   await syncDb();
   await createApp();
   await startListening();

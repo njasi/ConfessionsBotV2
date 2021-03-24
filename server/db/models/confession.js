@@ -71,11 +71,11 @@ const Confession = db.define("confession", {
       "wait_cw",
       "confirm_cw",
       "wait_reply",
-      "confirm_reply",
-      "invaild_cw"
+      "confirm_re",
+      "invaild_cw",
+      "hidden"
     ),
     defaultValue: "idle",
-    allowNull: true,
   },
   send_by: {
     type: Sequelize.DATE,
@@ -296,7 +296,9 @@ Confession.send = async function () {
       },
     },
   });
-  [...to_send].forEach((conf) => conf.send());
+  for (let i = 0; i < to_send.length; i++) {
+    await to_send[i].send();
+  }
 };
 
 module.exports = Confession;

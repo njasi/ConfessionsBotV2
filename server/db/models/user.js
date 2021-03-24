@@ -34,6 +34,14 @@ const User = db.define("user", {
   poll_id: {
     type: Sequelize.STRING,
   },
+  state: {
+    type: Sequelize.ENUM("idle", "confessing", "w_fellows", "w_feedback"),
+    defaultValue: "idle",
+    allowNull: false,
+  },
+  misc: {
+    type: Sequelize.JSON,
+  },
 });
 
 /**

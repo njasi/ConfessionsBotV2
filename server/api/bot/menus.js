@@ -590,14 +590,71 @@ const poll_info = new Menu(async (from, args) => {
   };
 }, "poll_info");
 
-const fellows_privacy = new Menu(async (from, args) => {
-  return {};
+// const fellows_privacy = new Menu(async (from, args) => {
+//   let text = "Do you want to reveal your name to {}?";
+//   if (args.to_confessor) {
+//     text = text.format(`Confessor ${args.to_confessor}`);
+//   }
+//   let options = {
+//     ...ik([
+//       [
+//         butt("Yes", "menu=fellows_text&p=false"),
+//         butt("No", "menu=fellows_text&p=true"),
+//       ],
+//       [butt("Cancel", "delete=true")],
+//     ]),
+//   };
+//   return { text, options };
+// });
+
+const fellows_send_options = new Menu(async (from, args) => {
+  const name = args.name ? args.name : "anon";
+  let text = "Your message to {} says:\n\n{}".format(name, args.message_text);
+  let options = {
+    ...ik([
+      [butt("Send anonymously", "menu=fellows_text&p=false")],
+      [butt("Send", "menu=fellows_text&p=true"), butt("Cancel", "delete=true")],
+    ]),
+  };
+  return { text, options };
+});
+
+const fellows_confirm_signed = new Menu(async (from, args) => {
+  let text = "Your message says:\n\n";
+  let options = {
+    ...ik([
+      [
+        butt("Yes", "menu=fellows_sent"), // TODO: send the message callback data
+        butt("Cancel", "delete=true"),
+      ],
+    ]),
+  };
+  return { text, options };
+});
+
+const fellows_sent = new Menu(async (from, args) => {
+  let name = args.name ? args.name : "anon";
+  let text = "Your message to {} has been sent".format(name);
+  let options = { ...ik([[butt("Ok", "delete=true")]]) }; // TODO: respond callback
+
+  return { text, options };
+});
+
+const fellows_recieved = new Menu(async (from, args) => {
+  let name = args.name ? args.name : "";
+  let text = "You have been sent a message from {}:\n\n{}".format(
+    name,
+    args.message_text
+  );
+  let options = { ...ik([[butt("Respond", "")]]) }; // TODO: respond callback
+
+  return { text, options };
 });
 
 // TODO menu -> reply
 // TODO menu -> chatlist
 // TODO menu -> verify_update
-// TODO menu -> settings
+// TODO menu -> settings (wip)
 
 const MENUS = {
   start, // the start menu
@@ -620,7 +677,11 @@ const MENUS = {
   cw_text_only, // error menu that says cws can only be text
   poll_info, // info abt how to use the polls
   fellows_info, // help/about menu just for the fellows section
-  fellows_privacy, // select if you want your name to be known when messaging someone
+  // fellows_privacy, // select if you want your name to be known when messaging someone
+  fellows_send_options, // 
+  fellows_confirm_signed, //
+  fellows_sent, // notice that your message has been sent
+  fellows_recieved, // the menu you see when you recieve a message from a fellow
 };
 
 module.exports = { MENUS, detectAndSwapMenu, swapMenu };

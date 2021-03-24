@@ -518,7 +518,9 @@ bot.on("callback_query", async (query) => {
   if (params["message_from"]) {
     // someone is contacting a confessor
     if (params["conf"]) {
-      MENUS.fellows_privacy.send();
+      MENUS.fellows_privacy.send(bot, query.from, {
+        to_confessor: params["conf"],
+      });
       return;
     }
   }
@@ -528,15 +530,20 @@ bot.on("inline_query", async (query) => {
   const num = parseInt(query.query.replace("#", ""));
   let results = [];
   if (num) {
-    results = await Confession.find({ where: { num } });
+    results = await Confession.findAll({
+      where: { num, stage: { [Op.not]: "hidden" } }, // dont give hidden confessions
+    });
   }
-  const text_match = await Confession.find({
+  const text_match = await Confession.findAll({
     where: {
       text: {
         [Op.like]: "%" + query.query + "%",
       },
+      stage: { [Op.not]: "hidden" },
     },
   });
   results = [...results, ...text_match];
+
+  console.log(results);
   // TODO : send the results for people to forward
 });
