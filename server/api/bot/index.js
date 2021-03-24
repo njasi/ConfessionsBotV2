@@ -7,8 +7,8 @@ const { commandRegexDict } = require("./config/command_regexes");
 const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus");
 const { User, Confession, Keyval } = require("../../db/models");
 const { Op } = require("sequelize");
+const sequelize = require("sequelize");
 const { cMid, vMid, cvMid } = require("./middleware");
-const { send } = require("../../db/models/confession");
 module.exports = router;
 
 /**
@@ -526,24 +526,80 @@ bot.on("callback_query", async (query) => {
   }
 });
 
-bot.on("inline_query", async (query) => {
-  const num = parseInt(query.query.replace("#", ""));
-  let results = [];
-  if (num) {
-    results = await Confession.findAll({
-      where: { num, stage: { [Op.not]: "hidden" } }, // dont give hidden confessions
-    });
-  }
-  const text_match = await Confession.findAll({
-    where: {
-      text: {
-        [Op.like]: "%" + query.query + "%",
-      },
-      stage: { [Op.not]: "hidden" },
-    },
-  });
-  results = [...results, ...text_match];
+// bot.on("inline_query", async (query) => {
+//   const search_text = query.query.trim();
+//   const num = parseInt(search_text.replace("#", ""));
+//   let results = [];
+//   if (num) {
+//     results = await Confession.findAll({
+//       attributes: [
+//         "num",
+//         "type",
+//         "text",
+//         "horny",
+//         "channel_message_id",
+//         "file_id",
+//       ],
+//       where: {
+//         [Op.and]: [
+//           sequelize.where(sequelize.cast(sequelize.col("num"), "varchar"), {
+//             [Op.or]: [
+//               { [Op.iLike]: `%${num}%` },
+//               { [Op.iLike]: `${num}%` },
+//               { [Op.iLike]: `%${num}` },
+//             ],
+//           }),
+//           // { stage: ull },
+//         ],
+//       },
+//       // dont give hidden confessions
+//       raw: true,
+//     });
+//   }
+//   if (search_text != "" || search_text != null) {
+//     const text_match = await Confession.findAll({
+//       attributes: [
+//         "num",
+//         "type",
+//         "text",
+//         "horny",
+//         "channel_message_id",
+//         "file_id",
+//       ],
+//       where: {
+//         text: {
+//           [Op.or]: [
+//             { [Op.iLike]: `%${search_text}%` },
+//             { [Op.iLike]: `${search_text}%` },
+//             { [Op.iLike]: `%${search_text}` },
+//           ],
+//         },
+//         stage: null,
+//       },
+//       raw: true,
+//     });
+//     results = [...results, ...text_match];
+//   }
 
-  console.log(results);
-  // TODO : send the results for people to forward
-});
+//   console.log(query);
+//   // console.log(results);
+//   // TODO : send the results for people to forward
+
+//   bot.answerInlineQuery(
+//     query.id,
+//     results.map((e) => {
+//       switch (e.type) {
+//         case "text":
+//           return {
+//             type:
+//           }
+//         default:
+//           return {
+//             type: e.type,
+//             id: e.num,
+//             [`${e.type}_file_id`]: e.file_id,
+//           };
+//       }
+//     })
+//   );
+// });

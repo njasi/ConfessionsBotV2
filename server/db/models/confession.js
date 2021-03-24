@@ -76,6 +76,7 @@ const Confession = db.define("confession", {
       "hidden"
     ),
     defaultValue: "idle",
+    allowNull: true,
   },
   send_by: {
     type: Sequelize.DATE,
