@@ -1,14 +1,21 @@
 const commandRegexDict = {
-  start: /^\/start($|@DabneyConfessionsBot$)/,
-  verify: /^\/verify($|@DabneyConfessionsBot$)/,
-  lock: /^\/lock($|@DabneyConfessionsBot$)/,
-  unlock: /^\/unlock($|@DabneyConfessionsBot$)/,
-  poll: /^\/poll($|@DabneyConfessionsBot$)/,
-  register: /^\/register($|@DabneyConfessionsBot$)/,
-  help: /^\/help($|@DabneyConfessionsBot$)/,
-  about: /^\/about($|@DabneyConfessionsBot$)/,
-  fellows_info: /^\/fellowsinfo($|@DabneyConfessionsBot$)/
+  start: command("start"),
+  verify: command("verify"),
+  lock: command("lock"),
+  unlock: command("unlock"),
+  poll: command("poll"),
+  register: command("register"),
+  help: command("help"),
+  about: command("about"),
+  fellows_info: command("fellowsinfo"),
+  addchat: command("addchat"),
+  removechat: command("removechat"),
 };
+
+function command(name) {
+  let reg = new RegExp(`^\/${name}($|@${process.env.BOT_USERNAME}$)`);
+  return reg;
+}
 
 const allCommands = Object.values(commandRegexDict).reduce((prev, current) => {
   const upper = new RegExp(prev);

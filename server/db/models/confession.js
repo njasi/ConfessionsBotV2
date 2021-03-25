@@ -119,7 +119,7 @@ Confession.prototype.send_helper = async function (
     user = await this.getUser();
   }
   const text = text_add_prefix(this.text, this.num);
-  console.log(`SEND_HELPER(${chat_id}, ${this.num}, ${cw_forward}):\n`);
+  console.log(`SEND_HELPER(${chat_id}, ${this.num}, ${cw_forward})`);
   // all cw messages will be text, unless the content is
   // actualy being sent somewhere ie cw_forward = true
   if (!cw_forward && this.content_warning !== null) {

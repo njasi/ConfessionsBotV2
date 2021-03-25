@@ -5,10 +5,16 @@ const { isDm, params_from_string } = require("./helpers");
 const { verifyUser } = require("./verify");
 const { commandRegexDict } = require("./config/command_regexes");
 const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus");
-const { User, Confession, Keyval } = require("../../db/models");
+const { User, Confession, Keyval, Chat } = require("../../db/models");
 const { Op } = require("sequelize");
 const sequelize = require("sequelize");
-const { cMid, vMid, cvMid } = require("./middleware");
+const {
+  cMid,
+  vMid,
+  cvMid,
+  aMid,
+  fool_blongus_absolute_utter_clampongus,
+} = require("./middleware");
 module.exports = router;
 
 /**
@@ -288,17 +294,16 @@ bot.onText(
 /**
  * Menu to send upon /start
  */
-bot.onText(
-  commandRegexDict.start,
+bot.onText(commandRegexDict.start, (message, reg) => {
+  // console.log(message); // TODO detect rickroll param somehow
   cvMid((message, reg) => {
     MENUS.start.send(bot, message.from, { from_command: true });
-  })
-);
+  })(message, reg);
+});
 
 /**
  * Lock/Unlock commands
  */
-
 bot.onText(
   commandRegexDict.lock,
   cvMid((message, reg) => {
@@ -319,6 +324,9 @@ bot.onText(
   })
 );
 
+/**
+ * Poll info command
+ */
 bot.onText(
   commandRegexDict.poll,
   cvMid((message, reg) => {
@@ -326,6 +334,9 @@ bot.onText(
   })
 );
 
+/**
+ * Help command
+ */
 bot.onText(
   commandRegexDict.help,
   cvMid((message, reg) => {
@@ -333,6 +344,9 @@ bot.onText(
   })
 );
 
+/**
+ * about command
+ */
 bot.onText(
   commandRegexDict.about,
   cvMid((message, reg) => {
@@ -340,6 +354,9 @@ bot.onText(
   })
 );
 
+/**
+ * fellows info command
+ */
 bot.onText(
   commandRegexDict.fellows_info,
   cvMid((message, reg) => {
@@ -347,6 +364,60 @@ bot.onText(
   })
 );
 
+/**
+ * add chat to listed
+ */
+bot.onText(
+  commandRegexDict.addchat,
+  vMid(
+    aMid(async (message, reg) => {
+      // only (chat) admins
+      if (
+        [
+          process.env.CONFESSIONS_CHANNEL_ID,
+          process.env.CONFESSIONS_CHAT_ID,
+        ].includes(`${message.chat.id}`)
+      ) {
+        fool_blongus_absolute_utter_clampongus(message);
+        return;
+      }
+      MENUS.chats_add.send(bot, message.chat, {
+        from_command: true,
+        chat_id: message.chat.id,
+      });
+    })
+  )
+);
+
+/**
+ * remove chat from listed
+ */
+bot.onText(
+  commandRegexDict.removechat,
+  vMid(
+    // only (chat) admins
+    aMid(async (message, reg) => {
+      if (
+        [
+          process.env.CONFESSIONS_CHANNEL_ID,
+          process.env.CONFESSIONS_CHAT_ID,
+        ].includes(`${message.chat.id}`)
+      ) {
+        fool_blongus_absolute_utter_clampongus(message);
+        return;
+      }
+      MENUS.chats_add.send(bot, message.chat, {
+        from_command: true,
+        chat_id: message.chat.id,
+        remove: true,
+      });
+    })
+  )
+);
+
+/**
+ * to update chat ids if a chat migrates
+ */
 bot.on("migrate_from_chat_id", (message, meta) => {
   bot.sendMessage(process.env.ADMIN_ID, JSON.stringify(message));
 });
@@ -355,6 +426,9 @@ bot.on("migrate_to_chat_id", (message, meta) => {
   bot.sendMessage(process.env.ADMIN_ID, JSON.stringify(message));
 });
 
+/**
+ * all the annoying callbacks
+ */
 bot.on("callback_query", async (query) => {
   const params = params_from_string(query.data);
   const chat_id = query.message.chat.id;
@@ -468,6 +542,50 @@ bot.on("callback_query", async (query) => {
     });
   }
 
+  // commands that you need to be a chat admin for
+  if (params["c_ad"]) {
+    // c_ad for chat admin
+    const chat_admins = await bot.getChatAdministrators(chat_id);
+    if (
+      [
+        parseInt(process.env.ADMIN_ID),
+        ...chat_admins.map((a) => a.id),
+      ].includes(query.from.id)
+    ) {
+      // adding a chat to the supported list
+      if (params["chat_add"]) {
+        let chat = await Chat.findOne({
+          where: { chat_id: params["chat_add"] },
+        });
+        if (chat) {
+          bot.answerCallbackQuery(query.id, {
+            text: "This chat is already in the network...",
+          });
+          bot.deleteMessage(chat_id, message_id);
+          return;
+        }
+        chat_info = await bot.getChat(params["chat_add"]);
+        await Chat.create({
+          name: chat_info.title,
+          chat_id: chat_info.id,
+        });
+      }
+      if (params["chat_remove"]) {
+        await Chat.destroy({
+          where: {
+            chat_id: params["chat_remove"],
+          },
+        });
+      }
+    } else {
+      bot.answerCallbackQuery(query.id, {
+        text: "You're not an admin. \nPerish.",
+        show_alert: true,
+        url: "t.me/test123420bot?start=rick",
+      });
+      return;
+    }
+  }
   // swaps to a new menu if the menu key is in params
   detectAndSwapMenu(query, params, bot);
 

@@ -617,7 +617,7 @@ const fellows_send_options = new Menu(async (from, args) => {
     ]),
   };
   return { text, options };
-});
+}, "fellows_send_options");
 
 const fellows_confirm_signed = new Menu(async (from, args) => {
   let text = "Your message says:\n\n";
@@ -630,7 +630,7 @@ const fellows_confirm_signed = new Menu(async (from, args) => {
     ]),
   };
   return { text, options };
-});
+}, "fellows_confirm_signed");
 
 const fellows_sent = new Menu(async (from, args) => {
   let name = args.name ? args.name : "anon";
@@ -638,7 +638,7 @@ const fellows_sent = new Menu(async (from, args) => {
   let options = { ...ik([[butt("Ok", "delete=true")]]) }; // TODO: respond callback
 
   return { text, options };
-});
+}, "fellows_sent");
 
 const fellows_recieved = new Menu(async (from, args) => {
   let name = args.name ? args.name : "";
@@ -649,12 +649,48 @@ const fellows_recieved = new Menu(async (from, args) => {
   let options = { ...ik([[butt("Respond", "")]]) }; // TODO: respond callback
 
   return { text, options };
-});
+}, "fellows_recieved");
 
 // TODO menu -> reply
 // TODO menu -> chatlist
 // TODO menu -> verify_update
 // TODO menu -> settings (wip)
+
+const chats_add = new Menu(async (from, args) => {
+  const chat = await Chat.findOne({ where: { chat_id: `${from.id}` } });
+  let text;
+  let action_btn;
+  if (args.remove) {
+    action_btn = chat
+      ? butt("Leave", `menu=chats_added&c_ad=true&chat_remove=${args.chat_id}`)
+      : butt("Add", `menu=chats_added&c_ad=true&chat_add=${args.chat_id}`);
+    text = chat
+      ? "Are you sure you want to leave the confessions network?"
+      : "<b>This chat is not registered, so it cannot be removed.</b>\n\nWould you like to add it to the confessions network instead?";
+  } else {
+    action_btn = chat
+      ? butt("Leave", `menu=chats_added&c_ad=true&chat_remove=${args.chat_id}`)
+      : butt("Add", `menu=chats_added&c_ad=true&chat_add=${args.chat_id}`);
+    text = chat
+      ? "<b>This chat is already registered, would you like to leave the Confessions network?</b>"
+      : "<b>Do you want to register this chat in confessions bot?</b>\n\nThis means that people will be able to choose to send confessions here through the bot.";
+  }
+
+  return {
+    text,
+    options: {
+      ...ik([[action_btn, butt("Cancel", "c_ad=true&delete=true")]]),
+    },
+  };
+}, "chats_add");
+
+const chats_added = new Menu(async (from, args) => {
+  return {
+    text: args.chat_remove
+      ? "<b>/f</b>"
+      : "<b>Welcome to the confessions network!</b>\n\nSend the command /removechat if you want to undo this. (an admin of the chat must do this)",
+  };
+}, "chats_added");
 
 const MENUS = {
   start, // the start menu
@@ -678,10 +714,12 @@ const MENUS = {
   poll_info, // info abt how to use the polls
   fellows_info, // help/about menu just for the fellows section
   // fellows_privacy, // select if you want your name to be known when messaging someone
-  fellows_send_options, // 
+  fellows_send_options, //
   fellows_confirm_signed, //
   fellows_sent, // notice that your message has been sent
   fellows_recieved, // the menu you see when you recieve a message from a fellow
+  chats_add,
+  chats_added,
 };
 
 module.exports = { MENUS, detectAndSwapMenu, swapMenu };
