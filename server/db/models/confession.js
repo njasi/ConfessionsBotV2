@@ -237,9 +237,12 @@ Confession.prototype.send = async function () {
     } else {
       this.send_helper(process.env.CONFESSIONS_CHAT_ID);
       this.send_helper(process.env.CONFESSIONS_CHANNEL_ID);
-      if (this.chat_id) {
+      if (this.chatId) {
         chat = await this.getChat();
-        this.send_helper(chat.chat_id);
+        // chat may have left the network while this person was confessing
+        try {
+          this.send_helper(chat.chat_id);
+        } catch (error) {}
       }
     }
     // stickers are not counted as confessions, just spam lol

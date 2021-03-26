@@ -14,6 +14,7 @@ const {
   aMid,
   fool_blongus_absolute_utter_clampongus,
 } = require("./middleware");
+const { answerCallbackQuery } = require("./bot");
 module.exports = router;
 
 /**
@@ -609,12 +610,25 @@ bot.on("callback_query", async (query) => {
       return;
     }
   }
+
+  // sets that aux chat to the id provided in target_id
+  if (params["target_id"]) {
+    const chat = await Chat.findByPk(parseInt(params["target_id"]));
+
+    // chat has been removed while in the menu or some error happened
+    if (chat == null) {
+      bot.answerCallbackQuery(query.id, {
+        text: "The selected chat could not be found, please try again.",
+        show_alert: true,
+      });
+      swapMenu(query, { menu: "settings" }, bot);
+      return;
+    }
+    await shared_confession.setChat(chat);
+  }
+
   // swaps to a new menu if the menu key is in params
   detectAndSwapMenu(query, params, bot);
-
-  if (params["target_id"]) {
-    // TODO: set chat here.
-  }
 
   // select the delay time at which the confession will be sent
   if (params["send_time"]) {

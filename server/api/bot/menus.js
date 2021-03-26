@@ -4,6 +4,11 @@ const { sendVerifyPoll } = require("./verify");
 const confession_responses = require("./config/confession_responses.json");
 
 /**
+ * how many chats are shown per page when choosing an aux chat
+ */
+const PAGE_LENGTH = 5;
+
+/**
  * haha butt
  * returns a formatted button for me so I can be lazy
  * @param {string} text - button text
@@ -299,7 +304,7 @@ const settings = new Menu(async (from, args) => {
       ],
       [
         butt("Reply to Message", "menu=reply"),
-        butt("Select Auxillary Chat", "menu=chatlist"),
+        butt("Select Auxillary Chat", "menu=chatlist&chat_page=0"),
       ],
       [butt("Back", "menu=start"), butt("Send Confession", `menu=send`)],
     ]),
@@ -321,7 +326,9 @@ const settings = new Menu(async (from, args) => {
         ? "❌ - no reply set"
         : `✅ - ${conf.reply_markup.text}`
     }\n<b>Target Chat:</b>\n\t\t${
-      conf.chatId == null ? "❌ - no aux chat selected" : `✅ - ${conf.name}`
+      conf.chatId == null
+        ? "❌ - no aux chat selected"
+        : `✅ - ${conf.chat.name}`
     }`,
     options,
   };
@@ -652,9 +659,59 @@ const fellows_recieved = new Menu(async (from, args) => {
 }, "fellows_recieved");
 
 // TODO menu -> reply
-// TODO menu -> chatlist
 // TODO menu -> verify_update
 // TODO menu -> settings (wip)
+
+const chatlist = new Menu(async (from, args) => {
+  const chats = await Chat.findAndCountAll({
+    attributes: ["id", "name"],
+    order: [["num", "DESC"]],
+    limit: PAGE_LENGTH,
+    offset: PAGE_LENGTH * parseInt(args["chat_page"]),
+    raw: true,
+  });
+
+  const confs = await args.user.getConfessions({
+    attributes: ["chatId"],
+    where: { in_progress: true },
+    raw: true,
+  });
+
+  let arrows = [
+    ...(args["chat_page"] != "0"
+      ? [
+          butt(
+            "⬅️",
+            `menu=chatlist&chat_page=${parseInt(args["chat_page"]) - 1}`
+          ),
+        ]
+      : []),
+    butt("Back", "menu=settings"),
+    ...(parseInt(args["chat_page"]) * PAGE_LENGTH + PAGE_LENGTH < chats.count
+      ? [
+          butt(
+            "➡️",
+            `menu=chatlist&chat_page=${parseInt(args["chat_page"]) + 1}`
+          ),
+        ]
+      : []),
+  ];
+
+  return {
+    text: "empty tm",
+    options: {
+      ...ik([
+        ...chats.rows.map((r) => [
+          butt(
+            confs[0].chatId == r.id ? `${r.name} - ✅` : r.name,
+            `menu=settings&target_id=${r.id}`
+          ),
+        ]),
+        arrows,
+      ]),
+    },
+  };
+}, "chatist");
 
 const chats_add = new Menu(async (from, args) => {
   const chat = await Chat.findOne({ where: { chat_id: `${from.id}` } });
@@ -723,6 +780,7 @@ const MENUS = {
   fellows_recieved, // the menu you see when you recieve a message from a fellow
   chats_add,
   chats_added,
+  chatlist,
 };
 
 module.exports = { MENUS, detectAndSwapMenu, swapMenu };
