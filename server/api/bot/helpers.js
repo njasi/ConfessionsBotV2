@@ -46,4 +46,24 @@ function params_from_string(str) {
   return params;
 }
 
-module.exports = { isDm, getFullName, params_from_string };
+function int_to_ordinal(num) {
+  str_num = `${num}`;
+  switch (str_num[str_num.length - 1]) {
+    case "1":
+      return `${num}st`;
+    case "2":
+      return `${num}nd`;
+    case "3":
+      return `${num}rd`;
+    case "4":
+    case "5":
+    case "6":
+    case "7":
+    case "8":
+    case "9":
+    case "0":
+      return `${num}th`;
+  }
+}
+
+module.exports = { isDm, getFullName, params_from_string, int_to_ordinal };

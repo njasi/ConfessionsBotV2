@@ -1,5 +1,5 @@
 const { User, Confession, Chat } = require("../../db/models");
-const { getFullName } = require("./helpers");
+const { getFullName, int_to_ordinal } = require("./helpers");
 const { sendVerifyPoll } = require("./verify");
 const confession_responses = require("./config/confession_responses.json");
 
@@ -663,23 +663,24 @@ const chats_add = new Menu(async (from, args) => {
   if (args.remove) {
     action_btn = chat
       ? butt("Leave", `menu=chats_added&c_ad=true&chat_remove=${args.chat_id}`)
-      : butt("Add", `menu=chats_added&c_ad=true&chat_add=${args.chat_id}`);
+      : butt("Connect", `menu=chats_added&c_ad=true&chat_add=${args.chat_id}`);
     text = chat
-      ? "Are you sure you want to leave the confessions network?"
-      : "<b>This chat is not registered, so it cannot be removed.</b>\n\nWould you like to add it to the confessions network instead?";
+      ? "Are you sure you want to leave the <u>Confessions Network™</u>?"
+      : "<b>This chat is not registered, so it cannot be removed.</b>\n\nWould you like to connect it to the <u>Confessions Network™</u> instead?";
   } else {
     action_btn = chat
       ? butt("Leave", `menu=chats_added&c_ad=true&chat_remove=${args.chat_id}`)
-      : butt("Add", `menu=chats_added&c_ad=true&chat_add=${args.chat_id}`);
+      : butt("Connect", `menu=chats_added&c_ad=true&chat_add=${args.chat_id}`);
     text = chat
-      ? "<b>This chat is already registered, would you like to leave the Confessions network?</b>"
-      : "<b>Do you want to register this chat in confessions bot?</b>\n\nThis means that people will be able to choose to send confessions here through the bot.";
+      ? "<b>This chat is already in the <u>Confessions Network™</u></b>\n\n Would you like to leave the <u>Confessions Network™</u> instead?</b>"
+      : "<b>Do you want to connect ths chat to the <u>Confessions Network™</u>?</b>\n\nThis means that people will be able to choose to send confessions here through the bot.";
   }
 
   return {
     text,
     options: {
       ...ik([[action_btn, butt("Cancel", "c_ad=true&delete=true")]]),
+      reply_to_message_id: args.message_id,
     },
   };
 }, "chats_add");
@@ -687,8 +688,10 @@ const chats_add = new Menu(async (from, args) => {
 const chats_added = new Menu(async (from, args) => {
   return {
     text: args.chat_remove
-      ? "<b>/f</b>"
-      : "<b>Welcome to the confessions network!</b>\n\nSend the command /removechat if you want to undo this. (an admin of the chat must do this)",
+      ? "<b>Goodbye forever</b>\n\nIf you wish rejoin the <u>Confessions Network™</u> use the command /joinnetwork (an admin of the chat must do this)"
+      : `<b>Welcome to the <u>Confessions Network™</u></b>\n\nThis chat is the ${int_to_ordinal(
+          args["chat_num"]
+        )} chat to join the <u>Confessions Network™</u>\n\nSend the command /leavenetwork if you want to undo this. (an admin of the chat must do this)`,
   };
 }, "chats_added");
 

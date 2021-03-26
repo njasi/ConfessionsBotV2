@@ -13,14 +13,13 @@ const bab_stickers = [
 
 async function fool_blongus_absolute_utter_clampongus(message) {
   const num = Math.floor(Math.random() * bab_stickers.length);
-  console.log(num);
   const sticker = await bot.sendSticker(message.chat.id, bab_stickers[num], {
     reply_to_message_id: message.message_id,
   });
   setTimeout(() => {
     try {
       bot.deleteMessage(message.chat.id, sticker.message_id);
-      bot.deleteMessage(message.chat.id, message.message_id);
+      bot.deleteMessage(message.chat.id, message.message_id).catch((err) => {});
     } catch (error) {}
   }, 15000);
 }
@@ -83,6 +82,8 @@ function aMid(cb) {
       ].includes(`${message.from.id}`)
     ) {
       cb(message);
+    } else {
+      fool_blongus_absolute_utter_clampongus(message);
     }
   }
   return _temp;

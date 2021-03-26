@@ -8,8 +8,8 @@ const commandRegexDict = {
   help: command("help"),
   about: command("about"),
   fellows_info: command("fellowsinfo"),
-  addchat: command("addchat"),
-  removechat: command("removechat"),
+  join_network: command("joinnetwork"),
+  leave_network: command("leavenetwork"),
 };
 
 function command(name) {

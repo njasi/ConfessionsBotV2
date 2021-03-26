@@ -7,7 +7,6 @@ const { commandRegexDict } = require("./config/command_regexes");
 const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus");
 const { User, Confession, Keyval, Chat } = require("../../db/models");
 const { Op } = require("sequelize");
-const sequelize = require("sequelize");
 const {
   cMid,
   vMid,
@@ -295,7 +294,7 @@ bot.onText(
  * Menu to send upon /start
  */
 bot.onText(commandRegexDict.start, (message, reg) => {
-  // console.log(message); // TODO detect rickroll param somehow
+  // TODO detect rickroll param somehow and send them a vid
   cvMid((message, reg) => {
     MENUS.start.send(bot, message.from, { from_command: true });
   })(message, reg);
@@ -368,9 +367,9 @@ bot.onText(
  * add chat to listed
  */
 bot.onText(
-  commandRegexDict.addchat,
-  vMid(
-    aMid(async (message, reg) => {
+  commandRegexDict.join_network,
+  aMid(
+    vMid(async (message, reg) => {
       // only (chat) admins
       if (
         [
@@ -384,6 +383,7 @@ bot.onText(
       MENUS.chats_add.send(bot, message.chat, {
         from_command: true,
         chat_id: message.chat.id,
+        message_id: message.message_id,
       });
     })
   )
@@ -393,10 +393,10 @@ bot.onText(
  * remove chat from listed
  */
 bot.onText(
-  commandRegexDict.removechat,
-  vMid(
+  commandRegexDict.leave_network,
+  aMid(
     // only (chat) admins
-    aMid(async (message, reg) => {
+    vMid(async (message, reg) => {
       if (
         [
           process.env.CONFESSIONS_CHANNEL_ID,
@@ -409,6 +409,7 @@ bot.onText(
       MENUS.chats_add.send(bot, message.chat, {
         from_command: true,
         chat_id: message.chat.id,
+        message_id: message.message_id,
         remove: true,
       });
     })
@@ -418,12 +419,22 @@ bot.onText(
 /**
  * to update chat ids if a chat migrates
  */
-bot.on("migrate_from_chat_id", (message, meta) => {
-  bot.sendMessage(process.env.ADMIN_ID, JSON.stringify(message));
-});
+// bot.on("migrate_from_chat_id", async (message, meta) => {
+//   bot.sendMessage(
+//     process.env.ADMIN_ID,
+//     `Migrate From:\n${JSON.stringify(message)}`
+//   );
+// });
 
-bot.on("migrate_to_chat_id", (message, meta) => {
-  bot.sendMessage(process.env.ADMIN_ID, JSON.stringify(message));
+bot.on("migrate_to_chat_id", async (message, meta) => {
+  bot.sendMessage(
+    process.env.ADMIN_ID,
+    `Migrate To:\n${JSON.stringify(message)}`
+  );
+
+  const chat = await Chat.findOne({ where: { chat_id: `${message.chat.id}` } });
+  chat.chat_id = message.migrate_to_chat_id;
+  await chat.save();
 });
 
 /**
@@ -555,20 +566,32 @@ bot.on("callback_query", async (query) => {
       // adding a chat to the supported list
       if (params["chat_add"]) {
         let chat = await Chat.findOne({
-          where: { chat_id: params["chat_add"] },
+          where: {
+            chat_id: params["chat_add"],
+          },
         });
         if (chat) {
           bot.answerCallbackQuery(query.id, {
             text: "This chat is already in the network...",
           });
-          bot.deleteMessage(chat_id, message_id);
+          bot.deleteMessage(chat.chat_id, message_id);
           return;
         }
-        chat_info = await bot.getChat(params["chat_add"]);
-        await Chat.create({
+        try {
+          chat_info = await bot.getChat(params["chat_add"]);
+          // test if the message is old and the group has since changed to a super group
+          res = await bot.sendMessage(params["chat_add"], "/test", {
+            disable_notification: true,
+          });
+          await bot.deleteMessage(params["chat_add"], res.message_id);
+        } catch (err) {
+          return; // chat is old (probably)
+        }
+        created_chat = await Chat.create({
           name: chat_info.title,
           chat_id: chat_info.id,
         });
+        params["chat_num"] = created_chat.id;
       }
       if (params["chat_remove"]) {
         await Chat.destroy({
