@@ -304,7 +304,10 @@ const settings = new Menu(async (from, args) => {
       ],
       [
         butt("Reply to Message", "menu=reply"),
-        butt("Select Auxillary Chat", "menu=chatlist&chat_page=0"),
+        butt(
+          conf.chatId ? "Change Auxillary Chat" : "Select Auxillary Chat",
+          "menu=chatlist&chat_page=0"
+        ),
       ],
       [butt("Back", "menu=start"), butt("Send Confession", `menu=send`)],
     ]),
@@ -674,6 +677,7 @@ const chatlist = new Menu(async (from, args) => {
   const confs = await args.user.getConfessions({
     attributes: ["chatId"],
     where: { in_progress: true },
+    include: { model: Chat },
     raw: true,
   });
 
@@ -696,18 +700,32 @@ const chatlist = new Menu(async (from, args) => {
         ]
       : []),
   ];
+  nconf = confs[0];
 
+  const target = `<b>Current Target Chat:</b>\n\t\t${
+    nconf.chatId == null
+      ? "❌ - no chat selected"
+      : `✅ - ${nconf["chat.name"]}`
+  }`;
   return {
-    text: "empty tm",
+    text: `<b>${
+      nconf.chatId
+        ? "Change or cancel the target chat below"
+        : "Select an target chat below"
+    }:</b>\nYour confession will be sent to the target chat in addition to the normal chats
+    \n${target}`,
     options: {
       ...ik([
         ...chats.rows.map((r) => [
           butt(
-            confs[0].chatId == r.id ? `${r.name} - ✅` : r.name,
+            nconf.chatId == r.id ? `${r.name} - ✅` : r.name,
             `menu=settings&target_id=${r.id}`
           ),
         ]),
         arrows,
+        ...(nconf.chatId == null
+          ? []
+          : [[butt("Remove Aux Chat", "menu=settings&target_id=-1")]]),
       ]),
     },
   };
