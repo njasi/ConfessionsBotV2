@@ -510,8 +510,6 @@ bot.on("callback_query", async (query) => {
   const chat_id = query.message.chat.id;
   const message_id = query.message.message_id;
 
-  console.log(params);
-
   // admin only cb buttons
   if (params["rad"] == "true" && query.from.id == process.env.ADMIN_ID) {
     // admin force approval

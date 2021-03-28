@@ -665,11 +665,28 @@ const fellows_recieved = new Menu(async (from, args) => {
 }, "fellows_recieved");
 
 const set_reply = new Menu(async (from, args) => {
+  const confs = await args.user.getConfessions();
+  const conf = confs[0];
+  text = args.try_again
+    ? "Send me the message link you'd like to try."
+    : `To reply to a message select it and choose the "Copy message link" option and then send it to me.\n\nNote that non supergroup chats do not have this option.`;
+
   return {
-    text: args.try_again
-      ? "Send me the message link you'd like to try."
-      : `To reply to a message select it and choose the "Copy message link" option and then send it to me.\n\nNote that non supergroup chats do not have this option.`,
-    options: { ...ik([[butt("Cancel", "menu=settings&set_stage=idle")]]) },
+    text: `${text}${
+      conf.reply_message
+        ? "\n\nIf you'd like to remove the reply select the \"Remove Reply\" button below."
+        : ""
+    }`,
+    options: {
+      ...ik([
+        [
+          butt("Cancel", "menu=settings&set_stage=idle"),
+          ...(conf.reply_message
+            ? [butt("Remove Reply", "menu=settings&clear_ri=true")]
+            : []),
+        ],
+      ]),
+    },
   };
 }, "ret-reply");
 
