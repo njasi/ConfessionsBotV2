@@ -2,9 +2,9 @@ const router = require("express").Router();
 // const request = require("request");
 const bot = require("./bot");
 const { isDm, params_from_string } = require("./helpers");
-const { verifyUser } = require("./verify");
+const { verifyUser } = require("./verify_poll");
 const { commandRegexDict } = require("./config/command_regexes");
-const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus");
+const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus/index");
 const { User, Confession, Keyval, Chat } = require("../../db/models");
 const { Op } = require("sequelize");
 const {
@@ -14,8 +14,6 @@ const {
   aMid,
   fool_blongus_absolute_utter_clampongus,
 } = require("./middleware");
-const { answerCallbackQuery } = require("./bot");
-const e = require("express");
 module.exports = router;
 
 /**
@@ -162,12 +160,13 @@ bot.on(
       const wait_cw_index = stages.indexOf("wait_cw");
       if (wait_cw_index != -1) {
         bot.deleteMessage(message.from.id, message.message_id);
+        confs[wait_cw_index].stage = "invaild_cw";
+        await confs[wait_cw_index].save();
         if (meta.type != "text") {
-          confs[wait_cw_index].stage = "invaild_cw";
-          confs[wait_cw_index].swapMenu(MENUS.cw_text_only);
+          confs[wait_cw_index].swapMenu(MENUS.cw_error);
           return;
         } else if (message.text.length > 69) {
-          confs[wait_cw_index].swapMenu(MENUS.cw_too_long);
+          confs[wait_cw_index].swapMenu(MENUS.cw_error, { error: 1 });
           return;
         }
         confs[wait_cw_index].content_warning = message.text;
@@ -497,6 +496,13 @@ bot.onText(
   )
 );
 
+bot.onText(
+  commandRegexDict.fellows,
+  cvMid(async (message, reg) => {
+    MENUS.fellows_setings.send(bot, message.from, { from_command: true });
+  })
+);
+
 /**
  * to update chat ids if a chat migrates
  */
@@ -751,7 +757,7 @@ bot.on("callback_query", async (query) => {
     }
     shared_confession.stage = "idle";
     shared_confession.reply_message = [[chat_id, params["m_id"]]];
-    // TODO detect reply to a confession
+    // TODO detect reply to a confessiona
 
     await shared_confession.save();
   }

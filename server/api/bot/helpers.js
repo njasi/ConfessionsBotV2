@@ -66,4 +66,33 @@ function int_to_ordinal(num) {
   }
 }
 
-module.exports = { isDm, getFullName, params_from_string, int_to_ordinal };
+/**
+ * haha butt
+ * returns a formatted button for me so I can be lazy
+ * @param {string} text - button text
+ * @param {string} callback_data - button cb data
+ * @param {object} options - options to use instead of cbdata
+ */
+function butt(text, callback_data, options = null) {
+  if (options != null) {
+    return { text, ...options };
+  }
+  return { text, callback_data };
+}
+
+/**
+ * amother formatted thing to be lazy
+ * @param {array of array of object} buttons - buttons
+ */
+function ik(buttons) {
+  return { reply_markup: { inline_keyboard: buttons } };
+}
+
+module.exports = {
+  isDm,
+  getFullName,
+  params_from_string,
+  int_to_ordinal,
+  butt,
+  ik,
+};

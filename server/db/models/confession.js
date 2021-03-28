@@ -114,12 +114,12 @@ const text_add_prefix = (text, num, cw = false, sticker = false) => {
 };
 
 const method_mappings = {
-  animation: bot.sendAnimation,
-  audio: bot.sendAudio,
-  document: bot.sendDocument,
-  photo: bot.sendPhoto,
-  video: bot.sendVideo,
-  voice: bot.sendVoice,
+  animation: bot.sendAnimation.bind(bot),
+  audio: bot.sendAudio.bind(bot),
+  document: bot.sendDocument.bind(bot),
+  photo: bot.sendPhoto.bind(bot),
+  video: bot.sendVideo.bind(bot),
+  voice: bot.sendVoice.bind(bot),
 };
 
 Confession.prototype.send_helper = async function (

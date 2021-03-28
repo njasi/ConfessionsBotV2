@@ -1,6 +1,6 @@
 const bot = require("./bot");
 const { isCommand } = require("./config/command_regexes");
-const { verifyUser } = require("./verify");
+const { verifyUser } = require("./verify_poll");
 const { isDm } = require("./helpers");
 const { MENUS } = require("./menus");
 

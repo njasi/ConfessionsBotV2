@@ -10,6 +10,7 @@ const commandRegexDict = {
   fellows_info: command("fellowsinfo"),
   join_network: command("joinnetwork"),
   leave_network: command("leavenetwork"),
+  fellows: command("fellows"),
 };
 
 function command(name) {
