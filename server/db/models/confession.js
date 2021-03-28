@@ -89,6 +89,18 @@ const Confession = db.define("confession", {
   message_info: {
     type: Sequelize.JSON,
     allowNull: true,
+    set(val) {
+      try {
+        JSON.parse(val);
+        this.setDataValue("message_info", val);
+      } catch (error) {
+        this.setDataValue("message_info", JSON.stringify(val));
+      }
+    },
+    get() {
+      const storedValue = this.getDataValue("message_info");
+      return JSON.parse(storedValue);
+    },
   },
 });
 
@@ -268,13 +280,14 @@ Confession.prototype.send = async function () {
   }
 };
 
-Confession.prototype.swapMenu = async function (new_menu) {
+Confession.prototype.swapMenu = async function (new_menu, options = {}) {
   const user = await this.getUser();
   const data = await new_menu.load(
     { id: user.telegram_id },
     {
       bot,
       user,
+      ...options,
     }
   );
 

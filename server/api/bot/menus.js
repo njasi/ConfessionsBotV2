@@ -303,7 +303,7 @@ const settings = new Menu(async (from, args) => {
             ]),
       ],
       [
-        butt("Reply to Message", "menu=reply"),
+        butt("Reply to Message", "menu=set_reply&set_stage=wait_reply"),
         butt(
           conf.chatId ? "Change Auxillary Chat" : "Select Auxillary Chat",
           "menu=chatlist&chat_page=0"
@@ -327,7 +327,10 @@ const settings = new Menu(async (from, args) => {
     }\n<b>Target Message:</b>\n\t\t${
       conf.reply_message == null
         ? "❌ - no reply set"
-        : `✅ - ${conf.reply_markup.text}`
+        : `✅ - replying to <a href="https://t.me/c/${conf.reply_message.chat_id.replace(
+            "-100",
+            ""
+          )}/${conf.reply_message.message_id}">this message</a>`
     }\n<b>Target Chat:</b>\n\t\t${
       conf.chatId == null
         ? "❌ - no aux chat selected"
@@ -661,6 +664,77 @@ const fellows_recieved = new Menu(async (from, args) => {
   return { text, options };
 }, "fellows_recieved");
 
+const set_reply = new Menu(async (from, args) => {
+  return {
+    text: args.try_again
+      ? "Send me the message link you'd like to try."
+      : `To reply to a message select it and choose the "Copy message link" option and then send it to me.\n\nNote that non supergroup chats do not have this option.`,
+    options: { ...ik([[butt("Cancel", "menu=settings&set_stage=idle")]]) },
+  };
+}, "ret-reply");
+
+const set_reply_confirm = new Menu(async (from, args) => {
+  return {
+    text: "Is this the message you want to respond to?",
+    options: {
+      ...ik([
+        [
+          butt(
+            "Yes",
+            args.rc_id == args.cc_id
+              ? `menu=settings&c_id=${args.rc_id}&m_id=${args.message_id}&delete=${args.forwarded.message_id}`
+              : `menu=set_reply_error&error=3&rc_id=${args.rc_id}&m_id=${args.message_id}&delete=${args.forwarded.message_id}`
+          ),
+          butt(
+            "Try again",
+            `menu=set_reply&try_again=true&delete=${args.forwarded.message_id}`
+          ),
+        ],
+      ]),
+    },
+  };
+}, "set_reply_confirm");
+
+// message link doesnt go to a registered chat or doesnt match the aux chat.
+const set_reply_error = new Menu(async (from, args) => {
+  // console.log(args);
+  let text = "",
+    options = {};
+  if (args.error == 1) {
+    text =
+      "It appears that this message is in a chat that is not in the <u>Confessions Network™</u>";
+    options = { ...ik([[butt("ok", "menu=settings&set_stage=idle")]]) };
+  } else if (args.error == 2) {
+    text = "The message link provided is not valid, please try again.";
+    options = {
+      ...ik([
+        [
+          butt("Try again", "menu=set_reply"),
+          butt("Cancel", "menu=settings&set_stage=idle"),
+        ],
+      ]),
+    };
+  } else if ((args.error = "3")) {
+    text = `The selected message is in a different chat than the confession's auxiliary chat.\n\nIf you'd like to change the auxiliary chat to the chat that has this message select "Change Aux Chat"`;
+    options = {
+      ...ik([
+        [
+          butt(
+            "Change Aux Chat",
+            `menu=settings&target_id=${args.rc_id}&c_id=${args.rc_id}&m_id=${args.m_id}`
+          ),
+        ],
+        [
+          butt("Retry", "menu=set_reply"),
+          butt("Cancel", "menu=settings&set_stage=idle"),
+        ],
+      ]),
+    };
+  }
+  return { text, options };
+}, "set_reply_error");
+
+// TODO menu -> networkinfo
 // TODO menu -> reply
 // TODO menu -> verify_update
 // TODO menu -> settings (wip)
@@ -799,6 +873,9 @@ const MENUS = {
   chats_add,
   chats_added,
   chatlist,
+  set_reply,
+  set_reply_confirm,
+  set_reply_error,
 };
 
 module.exports = { MENUS, detectAndSwapMenu, swapMenu };

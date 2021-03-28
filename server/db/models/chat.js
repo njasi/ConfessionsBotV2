@@ -14,6 +14,7 @@ const Chat = db.define("chat", {
   },
   chat_id: {
     type: Sequelize.STRING,
+    unique: true,
   },
 });
 

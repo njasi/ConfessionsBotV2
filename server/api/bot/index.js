@@ -15,6 +15,7 @@ const {
   fool_blongus_absolute_utter_clampongus,
 } = require("./middleware");
 const { answerCallbackQuery } = require("./bot");
+const e = require("express");
 module.exports = router;
 
 /**
@@ -154,8 +155,10 @@ bot.on(
       if (user.locked) {
         return;
       }
-      const confs = await user.getConfessions();
+      const confs = await user.getConfessions({ include: { model: Chat } });
       const stages = confs.map((e) => e.stage);
+
+      // detect setting a content warning vs confssing
       const wait_cw_index = stages.indexOf("wait_cw");
       if (wait_cw_index != -1) {
         bot.deleteMessage(message.from.id, message.message_id);
@@ -173,6 +176,67 @@ bot.on(
         confs[wait_cw_index].swapMenu(MENUS.cw_confirm);
         return;
       }
+
+      // detect setting a reply vs confessing
+      const wait_reply_index = stages.indexOf("wait_reply");
+      if (wait_reply_index != -1) {
+        const conf = confs[wait_reply_index];
+        const nums = message.text.replace("https://t.me/c/", "").split("/");
+        // message does not fit the desired format
+        const matched = message.text.match(/https:\/\/t.me\/c\/.*\/.*/);
+        if (
+          (matched && message.text != matched[0]) ||
+          nums.map((e) => !isNaN(e)).reduce((p, c) => p && c)
+        ) {
+          const chat_id = nums[0]; // should be chat id
+          const res_chats = await Chat.findAll({
+            where: {
+              [Op.or]: [
+                { chat_id: `-${chat_id}` },
+                { chat_id: `-100${chat_id}` },
+              ],
+            },
+          });
+
+          // chat is not found in the db
+          if (res_chats.length == 0) {
+            // check that its not sent to one of the main chats
+            if (
+              ![
+                process.env.CONFESSIONS_CHAT_ID,
+                process.env.CONFESSIONS_CHANNEL_ID,
+              ].includes(chat_id)
+            ) {
+              // chat not linked to the bot (or bad message)
+              conf.swapMenu(MENUS.set_reply_error, { error: 1 });
+            }
+          } else {
+            const forwarded = await bot.forwardMessage(
+              message.from.id,
+              res_chats[0].chat_id,
+              nums[1]
+            );
+
+            // to check if it is a confession later
+            conf.message_info = forwarded;
+            await conf.save();
+            // ask them if it is the correct message (set reply menu will deal with telling them the chat is bad)
+            conf.swapMenu(MENUS.set_reply_confirm, {
+              rc_id: res_chats[0].id,
+              cc_id: conf.chatId,
+              message_id: nums[1],
+              forwarded,
+            });
+          }
+        } else {
+          // TODO: tell the user that the message link is invalid and ask them if they want to try again
+          bot.deleteMessage(message.from.id, message.message_id);
+          conf.swapMenu(MENUS.set_reply_error, { error: 2 });
+        }
+        return;
+      }
+
+      // make the confession
       let confession;
       try {
         const general = {
@@ -446,6 +510,8 @@ bot.on("callback_query", async (query) => {
   const chat_id = query.message.chat.id;
   const message_id = query.message.message_id;
 
+  console.log(params);
+
   // admin only cb buttons
   if (params["rad"] == "true" && query.from.id == process.env.ADMIN_ID) {
     // admin force approval
@@ -459,99 +525,6 @@ bot.on("callback_query", async (query) => {
       MENUS.verify_accept.send(bot, { id: user.telegram_id });
     }
     return;
-  }
-
-  const shared_confession = await Confession.findOne({
-    where: {
-      in_progress: true,
-    },
-    include: {
-      model: User,
-      where: {
-        telegram_id: query.from.id,
-      },
-    },
-  });
-
-  if ("clear_cw" in params) {
-    shared_confession.content_warning = null;
-    const conf_id = parseInt(params["clear_cw"]);
-    const conf = await Confession.findByPk(conf_id);
-    conf.content_warning = null;
-    await conf.save();
-  }
-
-  if ("allow_res" in params) {
-    shared_confession.allow_responses = params.allow_res == "true";
-    await shared_confession.save();
-  }
-
-  if (params["set_stage"]) {
-    shared_confession.stage = params["set_stage"];
-    await shared_confession.save();
-  }
-
-  // removes confession of id params['remove_confession'], before the menu swap as some swaps remove confessions
-  if (params["remove_confession"]) {
-    const conf_id = parseInt(params["remove_confession"]);
-    const conf = await Confession.findOne({
-      where: { id: conf_id },
-      include: { model: User, where: { telegram_id: query.from.id } },
-    });
-    if (conf == null) {
-      bot.answerCallbackQuery(query.id, {
-        text: `There was an error removing a Confession. The mod(s) have been notified`,
-        show_alert: true,
-      });
-      bot.sendMessage(
-        process.env.ADMIN_ID,
-        `User ${
-          query.from.id
-        } failed to remove confession ${conf_id} (no relation)\nAdditional User info:\n${JSON.stringify(
-          query.from,
-          null,
-          2
-        )}`
-      );
-      return;
-    } else {
-      try {
-        try {
-          bot.deleteMessage(query.from.id, conf.menu_id);
-        } catch (error) {
-          // sometimes the message has already been deleted
-        }
-        await conf.destroy();
-      } catch (error) {
-        bot.answerCallbackQuery(query.id, {
-          text: `There was an error removing a Confession. The mod(s) have been notified`,
-          show_alert: true,
-        });
-        bot.sendMessage(
-          process.env.ADMIN_ID,
-          `User ${query.from.id} failed to remove confession ${conf.id} (conf.destroy() error)\n\n${error.stack}`
-        );
-      }
-    }
-  }
-
-  // user tapped view content button on a cw confession, send them the message
-  if (params.cw_confession_id) {
-    const cw_id = parseInt(params["cw_confession_id"]);
-    conf = await Confession.findByPk(cw_id);
-    if (conf == null) {
-      bot.answerCallbackQuery(query.id, {
-        text:
-          "It seems that this confession was removed... \n\n(or is realy old)",
-        show_alert: true,
-      });
-      return;
-    }
-    await conf.send_helper(query.from.id, (cw_forward = true));
-    bot.answerCallbackQuery(query.id, {
-      text: `The confession has been sent to your dms with the bot.`,
-      show_alert: true,
-    });
   }
 
   // commands that you need to be a chat admin for
@@ -611,6 +584,122 @@ bot.on("callback_query", async (query) => {
     }
   }
 
+  // user tapped view content button on a cw confession, send them the message
+  if (params.cw_confession_id) {
+    const cw_id = parseInt(params["cw_confession_id"]);
+    conf = await Confession.findByPk(cw_id);
+    if (conf == null) {
+      bot.answerCallbackQuery(query.id, {
+        text:
+          "It seems that this confession was removed... \n\n(or is realy old)",
+        show_alert: true,
+      });
+      return;
+    }
+    await conf.send_helper(query.from.id, (cw_forward = true));
+    bot.answerCallbackQuery(query.id, {
+      text: `The confession has been sent to your dms with the bot.`,
+      show_alert: true,
+    });
+    return;
+  }
+
+  // removes confession of id params['remove_confession'], before the menu swap as some swaps remove confessions
+  if (params["remove_confession"]) {
+    const conf_id = parseInt(params["remove_confession"]);
+    const conf = await Confession.findOne({
+      where: { id: conf_id },
+      include: { model: User, where: { telegram_id: query.from.id } },
+    });
+    if (conf == null) {
+      bot.answerCallbackQuery(query.id, {
+        text: `There was an error removing a Confession. The mod(s) have been notified`,
+        show_alert: true,
+      });
+      bot.sendMessage(
+        process.env.ADMIN_ID,
+        `User ${
+          query.from.id
+        } failed to remove confession ${conf_id} (no relation)\nAdditional User info:\n${JSON.stringify(
+          query.from,
+          null,
+          2
+        )}`
+      );
+      return;
+    } else {
+      try {
+        try {
+          bot.deleteMessage(query.from.id, conf.menu_id);
+        } catch (error) {
+          // sometimes the message has already been deleted
+        }
+        await conf.destroy();
+      } catch (error) {
+        bot.answerCallbackQuery(query.id, {
+          text: `There was an error removing a Confession. The mod(s) have been notified`,
+          show_alert: true,
+        });
+        bot.sendMessage(
+          process.env.ADMIN_ID,
+          `User ${query.from.id} failed to remove confession ${conf.id} (conf.destroy() error)\n\n${error.stack}`
+        );
+      }
+    }
+  }
+
+  // deletes messages from the bot when a user taps the button
+  if (params["delete"]) {
+    bot.deleteMessage(
+      chat_id,
+      params["delete"] == "true" ? message_id : params["delete"]
+    );
+  }
+
+  if (params["message_from"]) {
+    // someone is contacting a confessor
+    if (params["conf"]) {
+      MENUS.fellows_privacy.send(bot, query.from, {
+        to_confessor: params["conf"],
+      });
+      return;
+    }
+  }
+
+  // query up the confessioon info for all of the things below
+  const shared_confession = await Confession.findOne({
+    where: {
+      in_progress: true,
+    },
+    include: {
+      model: User,
+      where: {
+        telegram_id: query.from.id,
+      },
+    },
+  });
+
+  // clear the content warning of a confession
+  if ("clear_cw" in params) {
+    shared_confession.content_warning = null;
+    const conf_id = parseInt(params["clear_cw"]);
+    const conf = await Confession.findByPk(conf_id);
+    conf.content_warning = null;
+    await conf.save();
+  }
+
+  // change allow response setting of a confession
+  if ("allow_res" in params) {
+    shared_confession.allow_responses = params.allow_res == "true";
+    await shared_confession.save();
+  }
+
+  // set the stage of a confession
+  if (params["set_stage"]) {
+    shared_confession.stage = params["set_stage"];
+    await shared_confession.save();
+  }
+
   // sets that aux chat to the id provided in target_id
   if (params["target_id"]) {
     if (params["target_id"] == "-1") {
@@ -629,6 +718,21 @@ bot.on("callback_query", async (query) => {
       }
       await shared_confession.setChat(chat);
     }
+  }
+
+  // setting the message the confession wil reply to
+  if (params["c_id"] && params["m_id"]) {
+    console.log("Setting the reply\n", params);
+    // params[]
+    // TODO detect reply to a confession
+    // Confession.findOne
+    const chat = await Chat.findByPk(parseInt(params["c_id"]));
+    shared_confession.stage = "idle";
+    shared_confession.reply_message = {
+      chat_id: chat.chat_id,
+      message_id: params["m_id"],
+    };
+    await shared_confession.save();
   }
 
   // swaps to a new menu if the menu key is in params
@@ -653,34 +757,21 @@ bot.on("callback_query", async (query) => {
         break;
     }
     send_time = new Date(send_time);
-    const user = await User.findOne({ where: { telegram_id: query.from.id } });
-    const confession = await Confession.findOne({
-      where: { in_progress: true, userId: user.id },
-    });
-    if (confession == null) {
+    // const user = await User.findOne({ where: { telegram_id: query.from.id } });
+    // const confession = await Confession.findOne({
+    //   where: { in_progress: true, userId: user.id },
+    // });
+
+    if (shared_confession == null) {
       // for some reason the confession does not exist
+      // TODO tell the user something went wrong
       return;
     }
-    confession.send_by = send_time;
-    confession.in_progress = false;
-    confession.stage = null;
-    confession.menu_id = null;
-    await confession.save();
+    shared_confession.send_by = send_time;
+    shared_confession.in_progress = false;
+    shared_confession.stage = null;
+    shared_confession.menu_id = null;
+    await shared_confession.save();
     Confession.send();
-  }
-
-  // deletes messages from the bot when a user taps the button
-  if (params["delete"] == "true") {
-    bot.deleteMessage(chat_id, message_id);
-  }
-
-  if (params["message_from"]) {
-    // someone is contacting a confessor
-    if (params["conf"]) {
-      MENUS.fellows_privacy.send(bot, query.from, {
-        to_confessor: params["conf"],
-      });
-      return;
-    }
   }
 });
