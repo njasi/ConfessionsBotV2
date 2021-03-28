@@ -722,8 +722,6 @@ bot.on("callback_query", async (query) => {
 
   // setting the message the confession wil reply to
   if (params["c_id"] && params["m_id"]) {
-    console.log("Setting the reply\n", params);
-    // params[]
     // TODO detect reply to a confession
     // Confession.findOne
     const chat = await Chat.findByPk(parseInt(params["c_id"]));
@@ -732,6 +730,12 @@ bot.on("callback_query", async (query) => {
       chat_id: chat.chat_id,
       message_id: params["m_id"],
     };
+    await shared_confession.save();
+  }
+
+  // clear reply info
+  if(params["clear_ri"]){
+    shared_confession.reply_message = null
     await shared_confession.save();
   }
 

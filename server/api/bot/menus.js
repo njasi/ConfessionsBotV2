@@ -749,10 +749,9 @@ const chatlist = new Menu(async (from, args) => {
   });
 
   const confs = await args.user.getConfessions({
-    attributes: ["chatId"],
+    attributes: ["chatId", "reply_message"],
     where: { in_progress: true },
     include: { model: Chat },
-    raw: true,
   });
 
   let arrows = [
@@ -777,9 +776,7 @@ const chatlist = new Menu(async (from, args) => {
   nconf = confs[0];
 
   const target = `<b>Current Target Chat:</b>\n\t\t${
-    nconf.chatId == null
-      ? "❌ - no chat selected"
-      : `✅ - ${nconf["chat.name"]}`
+    nconf.chatId == null ? "❌ - no chat selected" : `✅ - ${nconf.chat.name}`
   }`;
   return {
     text: `<b>${
@@ -793,7 +790,11 @@ const chatlist = new Menu(async (from, args) => {
         ...chats.rows.map((r) => [
           butt(
             nconf.chatId == r.id ? `${r.name} - ✅` : r.name,
-            `menu=settings&target_id=${r.id}`
+            nconf.chatId == r.id
+              ? "menu=settings"
+              : nconf.reply_message
+              ? `menu=chatlist_reply&tar=${r.id}`
+              : `menu=settings&target_id=${r.id}`
           ),
         ]),
         arrows,
@@ -804,6 +805,38 @@ const chatlist = new Menu(async (from, args) => {
     },
   };
 }, "chatist");
+
+const chatlist_reply = new Menu(async (from, args) => {
+  const chat = Chat.findByPk(parseInt(args["tar"]));
+  const confs = await args.user.getConfessions({
+    attributes: ["chatId", "reply_message"],
+    where: { in_progress: true },
+    include: { model: Chat },
+  });
+  const conf = confs[0];
+
+  return {
+    text: `Are you sure you want to change your auxiliary chat to ${
+      chat.name
+    }?\nThis will clear <a href="https://t.me/c/${conf.reply_message.chat_id.replace(
+      "-100",
+      ""
+    )}/${
+      conf.reply_message.message_id
+    }">the message</a> you want to reply to, as it is in a different chat`,
+    options: {
+      ...ik([
+        [
+          butt(
+            "Change Aux Chat",
+            `menu=settings&target_id=${args["tar"]}&clear_ri=true`
+          ),
+        ],
+        [butt("Cancel Change", "menu=settings")],
+      ]),
+    },
+  };
+}, "chatlist_reply");
 
 const chats_add = new Menu(async (from, args) => {
   const chat = await Chat.findOne({ where: { chat_id: `${from.id}` } });
@@ -873,6 +906,7 @@ const MENUS = {
   chats_add,
   chats_added,
   chatlist,
+  chatlist_reply,
   set_reply,
   set_reply_confirm,
   set_reply_error,
