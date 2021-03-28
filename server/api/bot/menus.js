@@ -327,10 +327,10 @@ const settings = new Menu(async (from, args) => {
     }\n<b>Target Message:</b>\n\t\t${
       conf.reply_message == null
         ? "❌ - no reply set"
-        : `✅ - replying to <a href="https://t.me/c/${conf.reply_message.chat_id.replace(
+        : `✅ - replying to <a href="https://t.me/c/${conf.reply_message[0][0].replace(
             "-100",
             ""
-          )}/${conf.reply_message.message_id}">this message</a>`
+          )}/${conf.reply_message[0][1]}">this message</a>`
     }\n<b>Target Chat:</b>\n\t\t${
       conf.chatId == null
         ? "❌ - no aux chat selected"
@@ -346,7 +346,10 @@ const help = new Menu(() => {
   const options = {
     ...ik([
       [butt("Commands", "menu=commands"), butt("About", "menu=about")],
-      [butt("Fellowdarbs info", "menu=fellows_info")],
+      [
+        butt("Fellowdarbs info", "menu=fellows_info"),
+        butt("Confessions Network™ info", "menu=network_info"),
+      ],
       [butt("Main menu", "menu=start")],
     ]),
   };
@@ -373,12 +376,29 @@ const commands = new Menu(() => {
 
 const fellows_info = new Menu(() => {
   const text =
-    "<b>NOTICE</b>\nThe Fellow darbs feature is currently being renovated none of the commands listed here will do anything right now!\n\n<b>Fellow Darbs Commands:</b>\n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.\n/retire\nYou will be taken off of the fellows list.\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them\n\n<b>Purpose:</b>\nThis feature is for people who want support from others who are willing to listen, but are uncomfortable reaching out in person. <b>Do not ruin this for anyone who may need it</b>. I will obliterate all of your atoms if you do so.\n\n<b>Rules:</b>\nUse this for its intended purpose. If you are using it for another reason <b>please be kind</b>.\nThat is all.";
+    "<b>NOTICE</b>\nThe Fellow darbs feature is currently being renovated, so none of the commands listed here will do anything right now!\n\n<b>Fellow Darbs Commands:</b>\n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.\n/retire\nYou will be taken off of the fellows list.\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them\n\n<b>Purpose:</b>\nThis feature is for people who want support from others who are willing to listen, but are uncomfortable reaching out in person. <b>Do not ruin this for anyone who may need it</b>. I will obliterate all of your atoms if you do so.\n\n<b>Rules:</b>\nUse this for its intended purpose. If you are using it for another reason <b>please be kind</b>.\nThat is all.";
   const options = {
     ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
   };
   return { text, options };
 });
+
+const network_info = new Menu(() => {
+  const text = `<b><u>Confessions Network™</u> Commands:</b>
+/joinnetwork
+Send this in a chat and it will be added to the <u>Confessions Network™</u>
+/leavenetwork
+Send this in a chat to leave the <u>Confessions Network™</u>\n
+<b>Notes:</b>
+One must be an admin of the chat to use either of the above commands. To make a horny confession, select one of the horny chats in the aux chat select setting. If a horny chat is selected the confession will not be sent to the normal non-horny confession chats.\n
+<b>About <u>Confessions Network™</u>:</b>
+<u>Confessions Network™</u> is meant to be a way for users to send messages to chats other than the confessions chat. Users are not able to send confessions to chats that they ae not in. It also is what seperates the degenerates (horny confessions users) from the rest of us. Make sure to put content warnings on messages that may need them if you're sending to a more personal chat. Don't try to abuse this functionality or it will simply be taken away.
+\n`;
+  const options = {
+    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
+  };
+  return { text, options };
+}, "network_info");
 
 const ending_remark = new Menu(async (from, args) => {
   let choices = ["oof"];
@@ -674,7 +694,7 @@ const set_reply = new Menu(async (from, args) => {
   return {
     text: `${text}${
       conf.reply_message
-        ? "\n\nIf you'd like to remove the reply select the \"Remove Reply\" button below."
+        ? '\n\nIf you\'d like to remove the reply select the "Remove Reply" button below.'
         : ""
     }`,
     options: {
@@ -698,7 +718,7 @@ const set_reply_confirm = new Menu(async (from, args) => {
         [
           butt(
             "Yes",
-            args.rc_id == args.cc_id
+            args.rc_id == args.cc_id || args.rc_id < 0
               ? `menu=settings&c_id=${args.rc_id}&m_id=${args.message_id}&delete=${args.forwarded.message_id}`
               : `menu=set_reply_error&error=3&rc_id=${args.rc_id}&m_id=${args.message_id}&delete=${args.forwarded.message_id}`
           ),
@@ -809,7 +829,11 @@ const chatlist = new Menu(async (from, args) => {
             nconf.chatId == r.id ? `${r.name} - ✅` : r.name,
             nconf.chatId == r.id
               ? "menu=settings"
-              : nconf.reply_message
+              : nconf.reply_message &&
+                ![
+                  process.env.CONFESSIONS_CHAT_ID,
+                  process.env.CONFESSIONS_CHANNEL_ID,
+                ].includes(nconf.reply_message[0][0])
               ? `menu=chatlist_reply&tar=${r.id}`
               : `menu=settings&target_id=${r.id}`
           ),
@@ -835,11 +859,11 @@ const chatlist_reply = new Menu(async (from, args) => {
   return {
     text: `Are you sure you want to change your auxiliary chat to ${
       chat.name
-    }?\nThis will clear <a href="https://t.me/c/${conf.reply_message.chat_id.replace(
+    }?\nThis will clear <a href="https://t.me/c/${conf.reply_message[0][0].replace(
       "-100",
       ""
     )}/${
-      conf.reply_message.message_id
+      conf.reply_message[0][1]
     }">the message</a> you want to reply to, as it is in a different chat`,
     options: {
       ...ik([
@@ -902,6 +926,7 @@ const MENUS = {
   help, // main help menu
   about, // brings up abt text for the bot
   commands, // gives a list of commands
+  network_info,
   verify, // asks you if you want to veriy
   verify_request, // tells you your request to verify was sent
   verify_accept, // shows that your verification was accepted

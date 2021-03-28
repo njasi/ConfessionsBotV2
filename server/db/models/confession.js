@@ -130,6 +130,9 @@ Confession.prototype.send_helper = async function (
   if (this.allow_responses) {
     user = await this.getUser();
   }
+  const reply = this.reply_message
+    ? this.reply_message.find((e) => e[0] == chat_id)
+    : null;
   const text = text_add_prefix(this.text, this.num);
   console.log(`SEND_HELPER(${chat_id}, ${this.num}, ${cw_forward})`);
   // all cw messages will be text, unless the content is
@@ -165,11 +168,12 @@ Confession.prototype.send_helper = async function (
               : []),
           ],
         },
+        ...(reply ? { reply_to_message_id: reply[1] } : {}),
       }
     );
   }
   // cw_forward = true or no cw
-  const options = {
+  let options = {
     parse_mode: "HTML",
     ...(this.allow_responses
       ? {
@@ -187,6 +191,10 @@ Confession.prototype.send_helper = async function (
         }
       : {}),
   };
+  if (reply) {
+    options = { ...options, reply_to_message_id: reply[1] };
+  }
+
   switch (this.type) {
     case "text": {
       return await bot.sendMessage(chat_id, text, {
@@ -219,41 +227,63 @@ Confession.prototype.send_helper = async function (
   }
 };
 
+Confession.prototype.send_helper_combined = async function (chat_id) {
+  const message = await this.send_helper(chat_id);
+  this.message_info = [...this.message_info, [chat_id, message.message_id]];
+  await this.save();
+  return message;
+};
+
 Confession.prototype.send = async function () {
   const cNum = await Keyval.findOne({
     where: { key: "num" },
   });
   const num = cNum.value;
   this.num = num;
+  this.message_info = [];
   try {
     if (this.type == "poll") {
       const poll = await this.send_helper(process.env.CONFESSIONS_CHAT_ID);
-      bot.forwardMessage(
-        process.env.CONFESSIONS_CHANNEL_ID,
-        process.env.CONFESSIONS_CHAT_ID,
-        poll.message_id
+      let messages = [];
+      messages.push(
+        bot.forwardMessage(
+          process.env.CONFESSIONS_CHANNEL_ID,
+          process.env.CONFESSIONS_CHAT_ID,
+          poll.message_id
+        )
       );
-      bot.forwardMessage(
-        process.env.POLL_CHAT_ID,
-        process.env.CONFESSIONS_CHAT_ID,
-        poll.message_id
+      messages.push(
+        bot.forwardMessage(
+          process.env.POLL_CHAT_ID,
+          process.env.CONFESSIONS_CHAT_ID,
+          poll.message_id
+        )
       );
       if (this.chat_id) {
         chat = await this.getChat();
-        bot.forwardMessage(
-          chat.chat_id,
-          process.env.CONFESSIONS_CHAT_ID,
-          poll.message_id
+        messages.push(
+          bot.forwardMessage(
+            chat.chat_id,
+            process.env.CONFESSIONS_CHAT_ID,
+            poll.message_id
+          )
         );
       }
+      const m_info = [];
+      const all_sent = await Promise.all(messages);
+      for (let i = 0; i < all_sent.length; i++) {
+        m_info.push([all_sent[i].chat.id, all_sent[i].message_id]);
+      }
+      this.message_info = m_info;
+      await this.save();
     } else {
-      this.send_helper(process.env.CONFESSIONS_CHAT_ID);
-      this.send_helper(process.env.CONFESSIONS_CHANNEL_ID);
+      this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
+      this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
       if (this.chatId) {
         chat = await this.getChat();
         // chat may have left the network while this person was confessing
         try {
-          this.send_helper(chat.chat_id);
+          this.send_helper_combined(chat.chat_id);
         } catch (error) {}
       }
     }

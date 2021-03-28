@@ -205,10 +205,26 @@ bot.on(
               ![
                 process.env.CONFESSIONS_CHAT_ID,
                 process.env.CONFESSIONS_CHANNEL_ID,
-              ].includes(chat_id)
+              ].includes(`-100${chat_id}`)
             ) {
               // chat not linked to the bot (or bad message)
               conf.swapMenu(MENUS.set_reply_error, { error: 1 });
+            } else {
+              const forwarded = await bot.forwardMessage(
+                message.from.id,
+                `-100${chat_id}`,
+                nums[1]
+              );
+              conf.message_info = forwarded;
+              await conf.save();
+              // ask them if it is the correct message (set reply menu will deal with telling them the chat is bad)
+              conf.swapMenu(MENUS.set_reply_confirm, {
+                rc_id:
+                  `-100${chat_id}` == process.env.CONFESSIONS_CHAT_ID ? -1 : -2,
+                cc_id: conf.chatId,
+                message_id: nums[1],
+                forwarded,
+              });
             }
           } else {
             const forwarded = await bot.forwardMessage(
@@ -720,20 +736,29 @@ bot.on("callback_query", async (query) => {
 
   // setting the message the confession wil reply to
   if (params["c_id"] && params["m_id"]) {
-    // TODO detect reply to a confession
-    // Confession.findOne
-    const chat = await Chat.findByPk(parseInt(params["c_id"]));
+    const num = parseInt(params["c_id"]);
+    let chat_id = null;
+    switch (num) {
+      case -1:
+        chat_id = process.env.CONFESSIONS_CHAT_ID;
+        break;
+      case -2:
+        chat_id = process.env.CONFESSIONS_CHANNEL_ID;
+        break;
+      default:
+        const chat = await Chat.findByPk(num);
+        chat_id = chat.chat_id;
+    }
     shared_confession.stage = "idle";
-    shared_confession.reply_message = {
-      chat_id: chat.chat_id,
-      message_id: params["m_id"],
-    };
+    shared_confession.reply_message = [[chat_id, params["m_id"]]];
+    // TODO detect reply to a confession
+
     await shared_confession.save();
   }
 
   // clear reply info
-  if(params["clear_ri"]){
-    shared_confession.reply_message = null
+  if (params["clear_ri"]) {
+    shared_confession.reply_message = null;
     await shared_confession.save();
   }
 
