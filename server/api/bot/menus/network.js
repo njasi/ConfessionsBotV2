@@ -36,6 +36,7 @@ const chats_add = new Menu(async (from, args) => {
   };
 }, "chats_add");
 
+// TODO static chats cannot be changed
 const chats_added = new Menu(async (from, args) => {
   return {
     text: args.chat_remove
@@ -46,6 +47,7 @@ const chats_added = new Menu(async (from, args) => {
   };
 }, "chats_added");
 
+// TODO label chats as horny?
 const chatlist = new Menu(async (from, args) => {
   const chats = await Chat.findAndCountAll({
     attributes: ["id", "name"],

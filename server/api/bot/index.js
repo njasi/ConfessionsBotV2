@@ -243,7 +243,6 @@ bot.on(
             });
           }
         } else {
-          // TODO: tell the user that the message link is invalid and ask them if they want to try again
           bot.deleteMessage(message.from.id, message.message_id);
           conf.swapMenu(MENUS.set_reply_error, { error: 2 });
         }
@@ -779,7 +778,7 @@ bot.on("callback_query", async (query) => {
     }
     shared_confession.stage = "idle";
     shared_confession.reply_message = [[chat_id, params["m_id"]]];
-    // TODO detect reply to a confessiona
+    // TODO detect reply to a confession
 
     await shared_confession.save();
   }

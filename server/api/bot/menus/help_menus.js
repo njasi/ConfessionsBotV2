@@ -1,6 +1,8 @@
 const { butt, ik } = require("../helpers");
 const { Menu } = require("./menu_class");
 
+// TODO: cancel, delete=true btns on this screen will remove the message but not a confession if there is one.
+
 const help = new Menu(() => {
   const text =
     "<b>To send a confession:</b>\nJust send a message here and then Confessions Bot will give you options to configure and send your confession (and a cancel option). Confessions Bot currently supports Text, Stickers, Images, Videos, Audio, Documents, Gifs, Voice, and Polls\n\n<b>Sending polls:</b>\nUsing the polls functionality of the bot is easier than ever before! Simply send a poll to the bot and it will replicate it when it sends.";
@@ -21,7 +23,7 @@ const about = new Menu(() => {
   const text =
     "// TODO: put meaningful text here... just ask others what this is about for now";
   const options = {
-    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]), // TODO: thing
+    ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
   };
   return { text, options };
 });
