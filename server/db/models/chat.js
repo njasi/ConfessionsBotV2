@@ -16,6 +16,10 @@ const Chat = db.define("chat", {
     type: Sequelize.STRING,
     unique: true,
   },
+  old_chat_id: {
+    type: Sequelize.STRING,
+    unique: true,
+  },
 });
 
 module.exports = Chat;

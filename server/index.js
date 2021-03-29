@@ -1,4 +1,9 @@
-require("dotenv").config();
+if (process.env.NODE_ENV == "deploy") {
+  require("dotenv").config({ path: ".env_deploy" });
+} else {
+  require("dotenv").config({ path: ".env_test" });
+}
+
 const path = require("path");
 const express = require("express");
 const morgan = require("morgan");
@@ -7,6 +12,7 @@ const compression = require("compression");
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
 const db = require("./db");
 const test_chats = require("./api/bot/test_chats");
+// const e = require("express");
 const PORT = process.env.PORT || 8080;
 const app = express();
 
@@ -89,7 +95,9 @@ async function bootApp() {
   // db.sync({ force: true });
   await syncDb();
   await createApp();
-  // await test_chats();
+  if (process.env.NODE_ENV == "deploy") {
+    await test_chats();
+  }
   await startListening();
 }
 

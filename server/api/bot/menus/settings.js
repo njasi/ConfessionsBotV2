@@ -195,7 +195,6 @@ const set_reply_confirm = new Menu(async (from, args) => {
 
 // message link doesnt go to a registered chat or doesnt match the aux chat.
 const set_reply_error = new Menu(async (from, args) => {
-  // console.log(args);
   let text = "",
     options = {};
   if (args.error == 1) {

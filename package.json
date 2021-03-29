@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server",
-    "start-server": "nodemon server -e html,js,scss --ignore public --ignore client",
+    "start-dev": "nodemon server -e html,js,scss --ignore public --ignore client",
     "deploy": "webpack git add -A",
     "heroku-prebuild": "npm install --dev",
     "heroku-log": "heroku logs --tail",

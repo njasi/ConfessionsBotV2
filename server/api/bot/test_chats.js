@@ -22,6 +22,11 @@ async function test_chats() {
         "\t\x1b[32m%s\x1b[0m",
         `==> Test passed, chat is still active!`
       );
+      const chat = await bot.getChat(chats[i].chat_id);
+      if (chats[i].name != chat.title) {
+        chats[i].name = chat.title;
+        await chats[i].save();
+      }
     } catch (err) {
       console.log(
         "\t\x1b[31m%s\x1b[0m",

@@ -1,7 +1,6 @@
 const { butt, ik } = require("../helpers");
 const { Menu } = require("./menu_class");
 
-
 const help = new Menu(() => {
   const text =
     "<b>To send a confession:</b>\nJust send a message here and then Confessions Bot will give you options to configure and send your confession (and a cancel option). Confessions Bot currently supports Text, Stickers, Images, Videos, Audio, Documents, Gifs, Voice, and Polls\n\n<b>Sending polls:</b>\nUsing the polls functionality of the bot is easier than ever before! Simply send a poll to the bot and it will replicate it when it sends.";
@@ -55,11 +54,11 @@ One must be an admin of the chat to use either of the above commands. To make a 
 
 const fellows_info = new Menu(() => {
   const text =
-    "<b>NOTICE</b>\nThe Fellow darbs feature is currently being renovated, so none of the commands listed here will do anything right now!\n\n<b>Fellow Darbs Commands:</b>\n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.\n/retire\nYou will be taken off of the fellows list.\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them\n\n<b>Purpose:</b>\nThis feature is for people who want support from others who are willing to listen, but are uncomfortable reaching out in person. <b>Do not ruin this for anyone who may need it</b>. I will obliterate all of your atoms if you do so.\n\n<b>Rules:</b>\nUse this for its intended purpose. If you are using it for another reason <b>please be kind</b>.\nThat is all.";
+    "<b>NOTICE</b>\nThe Fellow darbs feature is still being remade. You are able to register as a fellow darb, but you cannot contact anyone yet\n\n<b>Fellow Darbs Commands:</b>\n/fellowssettings\n You will be given the choice to register/retire as a fellow darb here. \n/fellowdarbs\nthis gives the list of darbs and the commands to contact them\n\n<b>Notes:</b>\nWhen you are registered to the list of fellows, people will be able to request to talk to you anonymously. You must retire if you do not wish to recieve messages anymore.\n\n<b>Purpose:</b>\nThis feature is for people who want support from others who are willing to listen, but are uncomfortable reaching out in person. <b>Do not ruin this for anyone who may need it</b>. I will obliterate all of your atoms if you do so.\n\n<b>Rules:</b>\nUse this for its intended purpose. If you are using it for another reason <b>please be kind</b>.\nThat is all.";
   const options = {
     ...ik([
       [butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")],
-      butt("Fellows Settings", "menu=fellows_settings"),
+      [butt("Fellows Settings", "menu=fellows_settings")],
     ]),
   };
   return { text, options };

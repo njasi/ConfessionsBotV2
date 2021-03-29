@@ -8,9 +8,9 @@ const commandRegexDict = {
   help: command("help"),
   about: command("about"),
   fellows_info: command("fellowsinfo"),
+  fellows: command("fellowssettings"),
   join_network: command("joinnetwork"),
   leave_network: command("leavenetwork"),
-  fellows: command("fellows"),
 };
 
 function command(name) {

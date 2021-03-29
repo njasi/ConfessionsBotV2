@@ -97,7 +97,7 @@ bot.on("webhook_error", (error) => {
   );
 });
 
-bot.on("polling_error", (err) => console.log(err));
+bot.on("polling_error", (err) => w(err));
 
 /**
  * removes people from the verification chat if they are not verified
@@ -499,19 +499,9 @@ bot.onText(
 bot.onText(
   commandRegexDict.fellows,
   cvMid(async (message, reg) => {
-    MENUS.fellows_setings.send(bot, message.from, { from_command: true });
+    MENUS.fellows_settings.send(bot, message.from, { from_command: "true" });
   })
 );
-
-/**
- * to update chat ids if a chat migrates
- */
-// bot.on("migrate_from_chat_id", async (message, meta) => {
-//   bot.sendMessage(
-//     process.env.ADMIN_ID,
-//     `Migrate From:\n${JSON.stringify(message)}`
-//   );
-// });
 
 bot.on("migrate_to_chat_id", async (message, meta) => {
   bot.sendMessage(
@@ -520,6 +510,7 @@ bot.on("migrate_to_chat_id", async (message, meta) => {
   );
 
   const chat = await Chat.findOne({ where: { chat_id: `${message.chat.id}` } });
+  chat.old_chat_id = chat.chat_id;
   chat.chat_id = message.migrate_to_chat_id;
   await chat.save();
 });
@@ -684,6 +675,22 @@ bot.on("callback_query", async (query) => {
       });
       return;
     }
+  }
+
+  /**
+   * register or retire as a fellowdarb
+   */
+  if (params["register"]) {
+    const user = await User.findOne({ where: { telegram_id: query.from.id } });
+    switch (params["register"]) {
+      case "true":
+        user.fellow_darb = true;
+        break;
+      case "false":
+        user.fellow_darb = false;
+        break;
+    }
+    await user.save();
   }
 
   // query up the confessioon info for all of the things below

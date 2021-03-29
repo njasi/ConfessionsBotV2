@@ -1,7 +1,6 @@
 const { ik, butt } = require("../helpers");
 const { Menu } = require("./menu_class");
 
-
 const fellows_send_options = new Menu(async (from, args) => {
   const name = args.name ? args.name : "anon";
   let text = "Your message to {} says:\n\n{}".format(name, args.message_text);
@@ -47,17 +46,28 @@ const fellows_recieved = new Menu(async (from, args) => {
 }, "fellows_recieved");
 
 const fellows_settings = new Menu(async (from, args) => {
-  const thing = `menu=fellows_settings&from_command=true&register=${!args.user
-    .fellow_darb}`;
+  const thing = `menu=fellows_settings&from_command=${
+    args.from_command
+  }&register=${!args.user.fellow_darb}`;
   return {
-    text: args.user.fellow_darb ? "" : "",
+    text: args.user.fellow_darb
+      ? args.register
+        ? "<b>Welcome to the fellowdarbs system!</b>\n\nIf you ever want to retire come back to this menu and select the Retire button below."
+        : "You are already registered in the fellow darbs system, would you like to Retire?"
+      : args.register
+      ? "You are no longer registered in the fellow darbs system. \n\nIf you'd like to undo this just select the Register button below."
+      : "You are not currently registered as a fellow darb. If you would like to register just use the button below.\n\nFor information on what this means see the /fellowsinfo help menu.",
     options: {
       ...ik([
         [
           butt(args.user.fellow_darb ? "Retire" : "Register", thing),
           butt(
-            args.from_command ? "Cancel" : "Back",
-            args.from_command ? "delete=true" : "menu=fellows_info"
+            args.from_command == "true"
+              ? args.register
+                ? "Close"
+                : "Cancel"
+              : "Back",
+            args.from_command == "true" ? "delete=true" : "menu=fellows_info"
           ),
         ],
       ]),
