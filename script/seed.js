@@ -57,7 +57,7 @@ async function seed_chats() {
 async function seed() {
   try {
     console.log("Syncing db");
-    await db.sync({force:true});
+    await db.sync({ force: true });
     // await db.sync();
 
     await seed_admin();

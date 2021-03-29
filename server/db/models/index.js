@@ -33,6 +33,9 @@ Confession.belongsTo(Chat);
 User.hasMany(Confession);
 Confession.belongsTo(User);
 
+User.hasOne(Message, { foreignKey: "target" });
+User.hasOne(Message, { foreignKey: "initiator" });
+
 module.exports = {
   Keyval,
   User,

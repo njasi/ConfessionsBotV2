@@ -13,16 +13,9 @@ const Message = db.define("message", {
       notEmpty: true,
     },
   },
-  initiator: {
-    type: Sequelize.INTEGER,
-    allowNull: false,
-  },
-  from: {
-    type: Sequelize.INTEGER,
-    allowNull: false,
-  },
-  to: {
-    type: Sequelize.INTEGER,
+  from_init: {
+    type: Sequelize.BOOLEAN,
+    default: true,
     allowNull: false,
   },
   obscure_initiator: {
@@ -33,6 +26,11 @@ const Message = db.define("message", {
   obscure_target: {
     type: Sequelize.BOOLEAN,
     defaultValue: true,
+    allowNull: false,
+  },
+  status: {
+    type: Sequelize.ENUM("in_progress", "sent", "received"),
+    default: "in_progress",
     allowNull: false,
   },
 });

@@ -5,7 +5,7 @@ const { isDm, params_from_string } = require("./helpers");
 const { verifyUser } = require("./verify_poll");
 const { commandRegexDict } = require("./config/command_regexes");
 const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus/index");
-const { User, Confession, Keyval, Chat } = require("../../db/models");
+const { User, Confession, Keyval, Chat, Message } = require("../../db/models");
 const { Op } = require("sequelize");
 const {
   cMid,
@@ -55,8 +55,7 @@ bot.on("poll", async (answer, meta) => {
         process.env.VERIFY_CHAT_ID,
         `<a href = "tg://user?id=${user.id}">${user.name}${
           user.username == null ? "" : ` (@${user.username})`
-        }
-        </a>a was approved to use @DabneyConfessionsBot!\n\nIf you have an issue with this please contact the admins.`,
+        }</a> was approved to use @DabneyConfessionsBot!\n\nIf you have an issue with this please contact the admins.`,
         { parse_mode: "HTML" }
       );
     } else if (d_c == active_voters && answer.total_voter_count !== 0) {
@@ -78,8 +77,7 @@ bot.on("poll", async (answer, meta) => {
         process.env.VERIFY_CHAT_ID,
         `<a href = "tg://user?id=${user.id}">${user.name}${
           user.username == null ? "" : ` (@${user.username})`
-        }
-        </a> was not approved to use @DabneyConfessionsBot. \n\nIf you have an issue with this please contact the admins.`,
+        }</a> was not approved to use @DabneyConfessionsBot. \n\nIf you have an issue with this please contact the admins.`,
         { parse_mode: "HTML" }
       );
     }
@@ -150,6 +148,13 @@ bot.on(
         where: { telegram_id: message.from.id },
       });
       if (user.locked) {
+        return;
+      } else if (user.state == "w_fellows") {
+        const mess = await Message.create({
+          initiator: user.id,
+          from: user.id,
+          text: message.text,
+        });
         return;
       }
       const confs = await user.getConfessions({ include: { model: Chat } });
@@ -596,6 +601,18 @@ bot.on("callback_query", async (query) => {
   // user tapped view content button on a cw confession, send them the message
   if (params.cw_confession_id) {
     const cw_id = parseInt(params["cw_confession_id"]);
+
+    const from_user = await User.findOne({
+      where: { telegram_id: query.from.id },
+    });
+    if (from_user == null || from_user.verification_status < 1) {
+      bot.answerCallbackQuery(query.id, {
+        text: "Please verify with the bot first.",
+        show_alert: true,
+      });
+      return;
+    }
+
     conf = await Confession.findByPk(cw_id);
     if (conf == null) {
       bot.answerCallbackQuery(query.id, {
@@ -665,16 +682,6 @@ bot.on("callback_query", async (query) => {
     );
   }
 
-  if (params["message_from"]) {
-    // someone is contacting a confessor
-    if (params["conf"]) {
-      MENUS.fellows_say.send(bot, query.from, {
-        ...params,
-      });
-      return;
-    }
-  }
-
   /**
    * register or retire as a fellowdarb
    */
@@ -709,6 +716,57 @@ bot.on("callback_query", async (query) => {
       },
     },
   });
+
+  // contacting someone through fellow darbs / conf
+  if (params["contact"]) {
+    const from_user = await User.findOne({
+      where: { telegram_id: query.from.id },
+    });
+    if (from_user == null || from_user.verification_status < 1) {
+      bot.answerCallbackQuery(query.id, {
+        text: "Please verify with the bot first.",
+        show_alert: true,
+      });
+      return;
+    }
+
+    if (shared_confession != null) {
+      bot.answerCallbackQuery(query.id, {
+        text:
+          "Please finish your current Confession before contacting someone.",
+        show_alert: true,
+      });
+    }
+    const messages = await Message.findAll({
+      where: { initiator: `${from_user.id}`, status: "in_progress" },
+    });
+    if (messages.length > 0) {
+      bot.answerCallbackQuery(query.id, {
+        text:
+          "It seems you are already contacing someone, please finish that first.",
+        show_alert: true,
+      });
+    }
+
+    const common = {
+      from: user.id,
+      initiator: from_user.id,
+      obscure_initiator: true,
+    };
+    // someone is contacting a confessor
+    if (params["conf"]) {
+      Message.create({ ...common, obscure_target: true });
+      MENUS.fellows_say.send(bot, query.from, {
+        ...params,
+      });
+      return;
+    } else {
+      Message.create({ ...common, obscure_target: false });
+      MENUS.fellows_say.send(bot, query.from, {});
+
+      // TODO: swap into menu?
+    }
+  }
 
   // clear the content warning of a confession
   if ("clear_cw" in params) {
