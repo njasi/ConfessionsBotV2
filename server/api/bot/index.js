@@ -670,8 +670,8 @@ bot.on("callback_query", async (query) => {
   if (params["message_from"]) {
     // someone is contacting a confessor
     if (params["conf"]) {
-      MENUS.fellows_privacy.send(bot, query.from, {
-        to_confessor: params["conf"],
+      MENUS.fellows_say.send(bot, query.from, {
+        ...params,
       });
       return;
     }
@@ -690,6 +690,12 @@ bot.on("callback_query", async (query) => {
         user.fellow_darb = false;
         break;
     }
+    await user.save();
+  }
+
+  if (params["user_state"]) {
+    const user = await User.findOne({ where: { telegram_id: query.from.id } });
+    user.state = params["user_state"];
     await user.save();
   }
 

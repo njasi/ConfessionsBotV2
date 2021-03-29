@@ -161,7 +161,7 @@ Confession.prototype.send_helper = async function (
                   [
                     {
                       text: "Contact OP",
-                      callback_data: `message_from=${user.telegram_id}&conf=${this.num}`,
+                      callback_data: `user_state=w_fellows&message_from=${user.telegram_id}&conf=${this.num}`,
                     },
                   ],
                 ]
