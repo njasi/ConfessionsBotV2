@@ -7,20 +7,30 @@ const { User, Keyval } = require("../server/db/models");
 const db = require("../server/db");
 
 async function seed_admin() {
+  console.log("Seeding admins");
   await User.create({
     telegram_id: process.env.ADMIN_ID,
     name: process.env.ADMIN_NAME,
     username: process.env.ADMIN_USERNAME,
     verification_status: 1,
   });
-  console.log("Seeded admins");
+  console.log("\tSeeded admins");
+}
+
+async function try_seed_keyval(data) {
+  try {
+    await Keyval.create(data);
+  } catch (err) {
+    console.log(`\t"${data.key}" was already seeded.`);
+  }
 }
 
 async function seed_keyvals() {
-  await Keyval.create({ key: "v_chat_size", value: 1 });
-  await Keyval.create({ key: "num", value: 10096 });
-  await Keyval.create({ key: "hnum", value: 69 });
-  console.log("Seeded keyvals");
+  console.log("Seeding keyvals");
+  await try_seed_keyval({ key: "v_chat_size", value: 1 });
+  await try_seed_keyval({ key: "num", value: 10096 });
+  await try_seed_keyval({ key: "hnum", value: 69 });
+  console.log("\tSeeded keyvals");
 }
 
 async function seed() {

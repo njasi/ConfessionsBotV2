@@ -4,6 +4,7 @@ const db = require("../db");
 const Keyval = db.define("keyval", {
   key: {
     type: Sequelize.STRING,
+    unique: true,
   },
   value: {
     type: Sequelize.JSON,
