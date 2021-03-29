@@ -4,7 +4,6 @@ const db = require("../db");
 const Message = db.define("message", {
   chat_id: {
     type: Sequelize.INTEGER,
-    unique: true,
     allowNull: false,
   },
   text: {

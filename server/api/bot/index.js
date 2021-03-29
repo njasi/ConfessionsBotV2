@@ -749,6 +749,17 @@ bot.on("callback_query", async (query) => {
         swapMenu(query, { menu: "settings" }, bot);
         return;
       }
+
+      const chat_member = await bot.getChatMember(chat.chat_id, query.from.id);
+      if (!chat_member || chat_member.status == "left") {
+        bot.answerCallbackQuery(query.id, {
+          text:
+            "You cannot send confessions to this chat as you are not in it.",
+          show_alert: true,
+        });
+        swapMenu(query, { menu: "settings" }, bot);
+        return;
+      }
       await shared_confession.setChat(chat);
     }
   }

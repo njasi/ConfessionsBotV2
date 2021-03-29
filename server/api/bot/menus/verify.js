@@ -1,4 +1,4 @@
-const { butt, ik,getFullName } = require("../helpers");
+const { butt, ik, getFullName } = require("../helpers");
 const { User } = require("../../../db/models");
 const { sendVerifyPoll } = require("../verify_poll");
 const { Menu } = require("./menu_class");
@@ -44,7 +44,7 @@ const verify = new Menu(async (from, args) => {
 }, "verify");
 
 const verify_request = new Menu(async (from, args) => {
-  const [user, create] = await User.findOIrCreate({
+  const [user, create] = await User.findOrCreate({
     where: {
       telegram_id: from.id,
     },

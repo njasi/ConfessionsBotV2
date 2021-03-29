@@ -149,4 +149,11 @@ const chatlist_reply = new Menu(async (from, args) => {
   };
 }, "chatlist_reply");
 
-module.exports = { chats_added, chats_add, chatlist, chatlist_reply };
+
+
+module.exports = {
+  chats_added,
+  chats_add,
+  chatlist,
+  chatlist_reply,
+};
