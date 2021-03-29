@@ -20,6 +20,14 @@ const Chat = db.define("chat", {
     type: Sequelize.STRING,
     unique: true,
   },
+  horny: {
+    type: Sequelize.BOOLEAN,
+    default: false,
+  },
+  static: {
+    type: Sequelize.BOOLEAN,
+    default: false,
+  },
 });
 
 module.exports = Chat;

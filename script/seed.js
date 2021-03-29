@@ -3,8 +3,9 @@ if (process.env.NODE_ENV == "deploy") {
 } else {
   require("dotenv").config({ path: ".env_test" });
 }
-const { User, Keyval } = require("../server/db/models");
+const { User, Keyval, Chat } = require("../server/db/models");
 const db = require("../server/db");
+const test_chats = require("../server/api/bot/test_chats");
 
 async function seed_admin() {
   console.log("Seeding admins");
@@ -37,12 +38,33 @@ async function seed_keyvals() {
   console.log("\tSeeded keyvals");
 }
 
+async function seed_chats() {
+  console.log("Seeding Chats");
+  await Promise.all(
+    process.env.HORNY_CHATS_IDS.split(" ").map((e, i) => {
+      console.log(`\tSeeding h chat ${i}`);
+      return Chat.create({
+        chat_id: e,
+        name: `horny chat ${i}`,
+        horny: true,
+        static: true,
+      });
+    })
+  );
+  console.log("\tSeeded Chats");
+}
+
 async function seed() {
   try {
     console.log("Syncing db");
-    await db.sync();
+    await db.sync({ force: true });
     await seed_admin();
     await seed_keyvals();
+    await seed_chats();
+    console.log("Updating seeded chats");
+    await test_chats((tab = true));
+    console.log("\tUpdated seeded chats");
+
     await db.close();
   } catch (error) {
     console.log("Error seeding db:");

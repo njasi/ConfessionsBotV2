@@ -59,7 +59,7 @@ bot.on("poll", async (answer, meta) => {
         </a>a was approved to use @DabneyConfessionsBot!\n\nIf you have an issue with this please contact the admins.`,
         { parse_mode: "HTML" }
       );
-    } else if (d_c == active_voters && total_voter_count !== 0) {
+    } else if (d_c == active_voters && answer.total_voter_count !== 0) {
       // ban
       user.verification_status = -1;
       MENUS.verify_ban.send(bot, { id: user.telegram_id });
@@ -67,8 +67,7 @@ bot.on("poll", async (answer, meta) => {
         process.env.VERIFY_CHAT_ID,
         `<a href = "tg://user?id=${user.id}">${user.name}${
           user.username == null ? "" : ` (@${user.username})`
-        }
-        </a> was banned from @DabneyConfessionsBot.\n\nIf you have an issue with this please contact the admins.`,
+        }</a> was banned from @DabneyConfessionsBot.\n\nIf you have an issue with this please contact the admins.`,
         { parse_mode: "HTML" }
       );
     } else {
@@ -576,7 +575,7 @@ bot.on("callback_query", async (query) => {
           name: chat_info.title,
           chat_id: chat_info.id,
         });
-        params["chat_num"] = created_chat.id;
+        params["chat_num"] = await Chat.count();
       }
       if (params["chat_remove"]) {
         await Chat.destroy({

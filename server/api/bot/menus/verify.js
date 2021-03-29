@@ -39,6 +39,7 @@ const verify = new Menu(async (from, args) => {
         ];
     }
   }
+  console.log("IK", ik);
   const options = { ...ik(keyboard) };
   return { text, options };
 }, "verify");
