@@ -8,20 +8,24 @@ const db = require("../server/db");
 
 async function seed_admin() {
   console.log("Seeding admins");
-  await User.create({
-    telegram_id: process.env.ADMIN_ID,
-    name: process.env.ADMIN_NAME,
-    username: process.env.ADMIN_USERNAME,
-    verification_status: 1,
-  });
+  try {
+    await User.create({
+      telegram_id: process.env.ADMIN_ID,
+      name: process.env.ADMIN_NAME,
+      username: process.env.ADMIN_USERNAME,
+      verification_status: 1,
+    });
+  } catch (error) {}
   console.log("\tSeeded admins");
 }
 
 async function try_seed_keyval(data) {
   try {
     await Keyval.create(data);
+    console.log(`\t"${data.key}" was seeded.`);
   } catch (err) {
-    console.log(`\t"${data.key}" was already seeded.`);
+    console.log(`\tThere was an error seeding "${data.key}"`);
+    console.error(err);
   }
 }
 
@@ -34,13 +38,19 @@ async function seed_keyvals() {
 }
 
 async function seed() {
-  console.log("Syncing db");
-  await db.sync();
-  await seed_admin();
-  await seed_keyvals();
-  await db.close();
-  console.log("Closed db");
-  process.exit();
+  try {
+    console.log("Syncing db");
+    await db.sync();
+    await seed_admin();
+    await seed_keyvals();
+    await db.close();
+  } catch (error) {
+    console.log("Error seeding db:");
+    console.error(error);
+  } finally {
+    console.log("Closed db");
+    process.exit();
+  }
 }
 
 seed();
