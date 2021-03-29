@@ -757,7 +757,6 @@ bot.on("callback_query", async (query) => {
             "You cannot send confessions to this chat as you are not in it.",
           show_alert: true,
         });
-        swapMenu(query, { menu: "settings" }, bot);
         return;
       }
       await shared_confession.setChat(chat);

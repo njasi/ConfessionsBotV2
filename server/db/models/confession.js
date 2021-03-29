@@ -238,6 +238,14 @@ Confession.prototype.send = async function () {
   const cNum = await Keyval.findOne({
     where: { key: "num" },
   });
+
+  if (this.chatId) {
+    this.getChat().then((chat) => {
+      chat.num++;
+      chat.save();
+    });
+  }
+
   const num = cNum.value;
   this.num = num;
   this.message_info = [];
