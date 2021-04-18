@@ -2,6 +2,7 @@ const Sequelize = require("sequelize");
 const db = require("../db");
 const bot = require("../../api/bot/bot");
 const Keyval = require("./keyval");
+const Chat = require("./chat");
 
 // const { swapMenu } = require("../../api/bot/menus");
 
@@ -134,7 +135,7 @@ Confession.prototype.send_helper = async function (
     ? this.reply_message.find((e) => e[0] == chat_id)
     : null;
   const text = text_add_prefix(this.text, this.num);
-  console.log(`SEND_HELPER(${chat_id}, ${this.num}, ${cw_forward})`);
+  // console.log(`SEND_HELPER(${chat_id}, ${this.num}, ${cw_forward})`);
   // all cw messages will be text, unless the content is
   // actualy being sent somewhere ie cw_forward = true
   if (!cw_forward && this.content_warning !== null) {
@@ -267,7 +268,7 @@ Confession.prototype.send = async function () {
         )
       );
       if (this.chat_id) {
-        chat = await this.getChat();
+        let chat = await this.getChat();
         messages.push(
           bot.forwardMessage(
             chat.chat_id,
@@ -284,14 +285,25 @@ Confession.prototype.send = async function () {
       this.message_info = m_info;
       await this.save();
     } else {
-      this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
-      this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
+      let chat;
       if (this.chatId) {
         chat = await this.getChat();
-        // chat may have left the network while this person was confessing
-        try {
-          this.send_helper_combined(chat.chat_id);
-        } catch (error) {}
+
+        if (chat.horny) {
+          this.send_helper_combined(process.env.HORNY_CHANNEL_ID);
+          const horny_chats = await Chat.findAll({ where: { horny: true } });
+          for (let i = 0; i < horny_chats.length; i++) {
+            this.send_helper_combined(horny_chats[i].chat_id);
+          }
+        } else {
+          // chat may have left the network while this person was confessing
+          try {
+            this.send_helper_combined(chat.chat_id);
+          } catch (error) {}
+        }
+      } else {
+        this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
+        this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
       }
     }
     // stickers are not counted as confessions, just spam lol

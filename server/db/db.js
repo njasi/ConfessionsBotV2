@@ -2,8 +2,6 @@ const Sequelize = require("sequelize");
 
 const databaseName = "confessions_bot";
 
-console.log("setup sequelize");
-
 let options = {
   logging: false,
 };

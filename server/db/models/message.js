@@ -57,7 +57,7 @@ Message.prototype.swapMenu = async function (new_menu, options = {}) {
     user = await this.getTarget();
   }
 
-  console.log(user)
+  // console.log(user)
 
   const data = await new_menu.load(
     { id: user.telegram_id },

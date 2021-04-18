@@ -12,7 +12,9 @@
     "retry": "git aaa && git commit -m \"npm auto update\" && npm run update && npm run heroku-log",
     "heroku-log": "heroku logs --tail",
     "update": "git push heroku master",
-    "tunnel": "heroku config & heroku ps:exec"
+    "tunnel": "heroku config & heroku ps:exec",
+    "heroku-off": "heroku ps:scale web=0 --app dabney-confessions",
+    "heroku-on": "heroku ps:scale web=1 --app dabney-confessions"
   },
   "author": "",
   "license": "ISC",
