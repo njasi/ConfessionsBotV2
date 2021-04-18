@@ -104,10 +104,14 @@ async function bootApp() {
   console.log("BOI 6");
 
   await syncDb();
+  console.log("BOI 7");
   await createApp();
   if (process.env.NODE_ENV == "deploy") {
+    console.log("BOI 8");
     await test_chats();
   }
+  console.log("BOI 9");
+
   await startListening();
 }
 
