@@ -110,7 +110,6 @@ async function bootApp() {
   // await sequelize.drop();
   // db.sync({ force: true });
   console.log("BOI 6");
-
   await syncDb();
   console.log("BOI 7");
   await createApp();
