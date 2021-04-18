@@ -23,6 +23,6 @@
     "node-telegram-bot-api": "^0.51.0",
     "pg": "^8.5.1",
     "redis": "^3.0.2",
-    "sequelize": "^6.3.5"
+    "sequelize": "^6.6.2"
   }
 }
