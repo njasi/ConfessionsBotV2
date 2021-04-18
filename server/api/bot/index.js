@@ -764,9 +764,8 @@ bot.on("callback_query", async (query) => {
 
   // contacting someone through fellow darbs / conf
   if (params["contact"]) {
-    w_fellows;
     bot.answerCallbackQuery(query.id, {
-      text: "This feature doesnt actually work yet lol.",
+      text: "This feature isnt fully implemented yet lol.",
       show_alert: true,
     });
 
@@ -845,10 +844,13 @@ bot.on("callback_query", async (query) => {
 
   // change allow response setting of a confession
   if ("allow_res" in params) {
-    bot.answerCallbackQuery(query.id, {
-      text: "Note that ths feature will currently not do anything",
-      show_alert: true,
-    });
+    if (params.allow_res == "true") {
+      bot.answerCallbackQuery(query.id, {
+        text:
+          "Note that ths feature will currently not do anything.\n\nHowever it will allow responses to your confession once I finish it.",
+        show_alert: true,
+      });
+    }
     shared_confession.allow_responses = params.allow_res == "true";
     await shared_confession.save();
   }
