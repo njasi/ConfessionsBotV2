@@ -1,5 +1,6 @@
-if (process.env.NODE_ENV == "deploy") {
-  require("dotenv").config({ path: ".env_deploy" });
+if (process.env.NODE_ENV == "production") {
+  // require("dotenv").config({ path: ".env_deploy" });
+  process.env.DATABASE_URL = process.argv[2]
 } else {
   require("dotenv").config({ path: ".env_test" });
 }
