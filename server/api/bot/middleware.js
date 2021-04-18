@@ -31,7 +31,7 @@ async function fool_blongus_absolute_utter_clampongus(message) {
  */
 function vMid(cb, skip_on_command = false) {
   async function _temp(message) {
-    console.log(message); // if I just want to see messages
+    // console.log(message); // if I just want to see messages
     if (skip_on_command && isCommand(message)) return;
     const v = await verifyUser(message.from.id);
     if (v) {
