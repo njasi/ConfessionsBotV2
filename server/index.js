@@ -97,10 +97,10 @@ const startListening = () => {
 const syncDb = () =>
   db
     .sync()
-    .success(function () {
+    .then(function () {
       console.log("DB synced");
     })
-    .error(function (err) {
+    .catch(function (err) {
       console.log("Error:", err);
     });
 
