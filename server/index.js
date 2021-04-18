@@ -78,7 +78,6 @@ const createApp = () => {
 };
 
 const startListening = () => {
-
   // start listening (and create a 'server' object representing our server)
   const server = app.listen(PORT, () =>
     console.log(`Started listening on ${PORT}`)
@@ -92,9 +91,7 @@ const startListening = () => {
 const syncDb = () =>
   db
     .sync()
-    .then(function () {
-      console.log("DB synced");
-    })
+    .then(function () {})
     .catch(function (err) {
       console.log("Error:", err);
     });

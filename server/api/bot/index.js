@@ -32,7 +32,12 @@ bot.on("poll", async (answer, meta) => {
   const num = await User.count({
     where: { verification_status: { [Op.gt]: 0 } },
   });
-  const user = await User.findOne({ where: { poll_id: answer.id } });
+  let user;
+  try {
+    user = await User.findOne({ where: { poll_id: answer.id } });
+  } catch (e) {
+    return;
+  }
   // this must not be a verification poll
   if (user == null) return;
   // take out sluts votes
@@ -338,6 +343,7 @@ bot.on(
             // file_id and copy the message and forward it later
             confession = await Confession.create({
               ...general,
+              text: message.poll.question,
               file_id: message.message_id,
             });
             break;
@@ -859,6 +865,13 @@ bot.on("callback_query", async (query) => {
 
   // set the stage of a confession
   if (params["set_stage"]) {
+    if (params["set_stage"] == "wait_cw" && shared_confession.type == "poll") {
+      bot.answerCallbackQuery(query.id, {
+        text: "You can't put a content warning on a poll",
+        show_alert: true,
+      });
+      return;
+    }
     shared_confession.stage = params["set_stage"];
     await shared_confession.save();
   }

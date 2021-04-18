@@ -225,6 +225,7 @@ Confession.prototype.send_helper = async function (
     case "poll": {
       const u = await this.getUser();
       return await bot.copyMessage(chat_id, u.telegram_id, this.file_id, {
+        caption: text,
         ...options,
       });
     }
@@ -264,38 +265,55 @@ Confession.prototype.send = async function () {
   this.message_info = [];
   try {
     if (this.type == "poll") {
-      const poll = await this.send_helper(process.env.CONFESSIONS_CHAT_ID);
+      let poll;
       let messages = [];
-      messages.push(
-        bot.forwardMessage(
-          process.env.CONFESSIONS_CHANNEL_ID,
-          process.env.CONFESSIONS_CHAT_ID,
-          poll.message_id
-        )
-      );
-      messages.push(
-        bot.forwardMessage(
-          process.env.POLL_CHAT_ID,
-          process.env.CONFESSIONS_CHAT_ID,
-          poll.message_id
-        )
-      );
-      if (this.chat_id) {
-        let chat = await this.getChat();
+
+      if (this.horny) {
+        poll = await this.send_helper_combined(process.env.HORNY_CHANNEL_ID);
+
+        const horny_chats = await Chat.findAll({ where: { horny: true } });
+        for (let i = 0; i < horny_chats.length; i++) {
+          messages.push(
+            bot.forwardMessage(
+              horny_chats[i].chat_id,
+              process.env.HORNY_CHANNEL_ID,
+              poll.message_id
+            )
+          );
+        }
+      } else {
+        poll = await this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
         messages.push(
           bot.forwardMessage(
-            chat.chat_id,
+            process.env.CONFESSIONS_CHANNEL_ID,
             process.env.CONFESSIONS_CHAT_ID,
             poll.message_id
           )
         );
+        messages.push(
+          bot.forwardMessage(
+            process.env.POLL_CHAT_ID,
+            process.env.CONFESSIONS_CHAT_ID,
+            poll.message_id
+          )
+        );
+        if (this.chat_id) {
+          let chat = await this.getChat();
+          messages.push(
+            bot.forwardMessage(
+              chat.chat_id,
+              process.env.CONFESSIONS_CHAT_ID,
+              poll.message_id
+            )
+          );
+        }
       }
       const m_info = [];
       const all_sent = await Promise.all(messages);
       for (let i = 0; i < all_sent.length; i++) {
         m_info.push([all_sent[i].chat.id, all_sent[i].message_id]);
       }
-      this.message_info = m_info;
+      this.message_info = [...this.message_info, ...m_info];
       await this.save();
     } else {
       let chat;
@@ -339,6 +357,8 @@ Confession.prototype.send = async function () {
       process.env.ADMIN_ID,
       `There was an error sending confession #${num}:\n${error.stack}`
     );
+    this.send_by = null;
+    await this.save();
   }
 };
 
