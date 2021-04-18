@@ -151,7 +151,7 @@ bot.on(
       if (user.locked) {
         return;
         // detect if they are sending a message to someone
-      } else if ((user.state == "ignore")) {
+      } else if (user.state == "ignore") {
         return;
       } else if (user.state == "w_fellows") {
         const mess = await Message.findOne({
@@ -736,6 +736,9 @@ bot.on("callback_query", async (query) => {
   }
 
   if (params["user_state"]) {
+    if (params["user_state"] == "w_fellows") {
+      return;
+    }
     const user = await User.findOne({ where: { telegram_id: query.from.id } });
     user.state = params["user_state"];
     await user.save();
@@ -761,6 +764,13 @@ bot.on("callback_query", async (query) => {
 
   // contacting someone through fellow darbs / conf
   if (params["contact"]) {
+    w_fellows;
+    bot.answerCallbackQuery(query.id, {
+      text: "This feature doesnt actually work yet lol.",
+      show_alert: true,
+    });
+
+    return;
     // check that the user is even verified
     const from_user = await User.findOne({
       where: { telegram_id: query.from.id },
@@ -836,10 +846,9 @@ bot.on("callback_query", async (query) => {
   // change allow response setting of a confession
   if ("allow_res" in params) {
     bot.answerCallbackQuery(query.id, {
-      text: "I have sets to do perhaps ill make this work later.",
+      text: "Note that ths feature will currently not do anything",
       show_alert: true,
-    })
-    return
+    });
     shared_confession.allow_responses = params.allow_res == "true";
     await shared_confession.save();
   }
