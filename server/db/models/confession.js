@@ -329,9 +329,9 @@ Confession.prototype.send = async function () {
         } else {
           // chat may have left the network while this person was confessing
           try {
-            this.send_helper_combined(chat.chat_id);
             this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
             this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
+            this.send_helper_combined(chat.chat_id);
           } catch (error) {}
         }
       } else {
