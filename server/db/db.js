@@ -7,7 +7,11 @@ console.log("setup sequelize");
 const db = new Sequelize(
   process.env.DATABASE_URL || `postgres://localhost:5432/${databaseName}`,
   {
-    logging: console.log,
+    logging: false,
+    dialect: "postgres",
+    native: true,
+    ssl: true,
+    dialectOptions: { ssl: true, rejectUnauthorized: false },
     // https://stackoverflow.com/questions/25000183/node-js-postgresql-error-no-pg-hba-conf-entry-for-host
     // dialect: "postgres",
 
@@ -18,10 +22,6 @@ const db = new Sequelize(
     //   //   // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
     //   rejectUnauthorized: false,
     // },
-    dialect: "postgres",
-    native: true,
-    ssl: true,
-    dialectOptions: { ssl: true },
   }
 );
 
