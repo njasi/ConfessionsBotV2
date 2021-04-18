@@ -10,9 +10,9 @@ const db = new Sequelize(
     dialect: "postgres",
     dialectOptions: {
       ssl: true,
+      // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
+      rejectUnauthorized: false,
     },
-    // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
-    rejectUnauthorized: false,
   }
 );
 
