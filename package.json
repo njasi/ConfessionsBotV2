@@ -9,6 +9,7 @@
     "seed": "node script/seed",
     "deploy": "webpack git add -A",
     "heroku-prebuild": "npm install --dev",
+    "retry": "git aaa & git commit -m \"npm auto update\" & npm run update & npm run heroku-log",
     "heroku-log": "heroku logs --tail",
     "update": "git push heroku master",
     "tunnel": "heroku config & heroku ps:exec"
