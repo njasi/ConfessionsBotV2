@@ -105,11 +105,17 @@ const Confession = db.define("confession", {
   },
 });
 
-const text_add_prefix = (text, num, cw = false, sticker = false) => {
+const text_add_prefix = (
+  text,
+  num,
+  cw = false,
+  sticker = false,
+  horny = false
+) => {
   if (sticker) {
     return `<b>Content Warning Sticker...</b>\nCW:\t${text}`;
   }
-  return `<b>Confession #${num}:</b>\n${
+  return `<b>${horny ? "Horny " : ""}Confession #${num}:</b>\n${
     cw ? `CW:\t${text}` : text == null ? "" : text
   }`;
 };
@@ -134,7 +140,7 @@ Confession.prototype.send_helper = async function (
   const reply = this.reply_message
     ? this.reply_message.find((e) => e[0] == chat_id)
     : null;
-  const text = text_add_prefix(this.text, this.num);
+  const text = text_add_prefix(this.text, this.num, false, false, this.horny);
   // console.log(`SEND_HELPER(${chat_id}, ${this.num}, ${cw_forward})`);
   // all cw messages will be text, unless the content is
   // actualy being sent somewhere ie cw_forward = true
@@ -145,7 +151,8 @@ Confession.prototype.send_helper = async function (
         this.content_warning,
         this.num,
         (cw = true),
-        (sticker = this.type == "sticker")
+        (sticker = this.type == "sticker"),
+        (horny = this.horny)
       ),
       {
         parse_mode: "HTML",
@@ -235,15 +242,21 @@ Confession.prototype.send_helper_combined = async function (chat_id) {
 };
 
 Confession.prototype.send = async function () {
-  const cNum = await Keyval.findOne({
+  let cNum = await Keyval.findOne({
     where: { key: "num" },
   });
 
   if (this.chatId) {
-    this.getChat().then((chat) => {
-      chat.num++;
-      chat.save();
-    });
+    let chat = await this.getChat();
+    chat.num++;
+    chat.save();
+
+    if (chat.horny) {
+      cNum = await Keyval.findOne({
+        where: { key: "hnum" },
+      });
+      this.horny = true;
+    }
   }
 
   const num = cNum.value;
