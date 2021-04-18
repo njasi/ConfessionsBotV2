@@ -6,11 +6,11 @@ const bot = new Bot(token, {
   polling: process.env.NODE_ENV !== "production",
 });
 
-if (process.env.NODE_ENV !== "production") {
-  bot.setWebHook();
+if (process.env.NODE_ENV === "production") {
+  // bot.setWebHook();
+  bot.setWebHook(`https://dabney-confessions.herokuapp.com/api/bot/${token}`);
 } else {
   // TODO: setup webhook
-  // bot.setWebHook(`https://frosh-io.herokuapp.com/api/bot/${token}`);
 }
 
 module.exports = bot;

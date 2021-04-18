@@ -41,6 +41,9 @@ async function seed_keyvals() {
 
 async function seed_chats() {
   console.log("Seeding Chats");
+  if(!process.env.HORNY_CHATS_IDS){
+    return
+  }
   await Promise.all(
     process.env.HORNY_CHATS_IDS.split(" ").map((e, i) => {
       console.log(`\tSeeding h chat ${i}`);
