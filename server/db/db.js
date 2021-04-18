@@ -9,7 +9,7 @@ const db = new Sequelize(
   {
     logging: false,
     dialect: "postgres",
-    native: true,
+    // native: true,
     ssl: true,
     dialectOptions: { ssl: true, rejectUnauthorized: false },
     // https://stackoverflow.com/questions/25000183/node-js-postgresql-error-no-pg-hba-conf-entry-for-host
