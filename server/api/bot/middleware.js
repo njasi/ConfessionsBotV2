@@ -82,6 +82,7 @@ function aMid(cb) {
         ...chat_admins.map((a) => `${a.user.id}`),
       ].includes(`${message.from.id}`)
     ) {
+      console.log(message)
       cb(message);
     } else {
       fool_blongus_absolute_utter_clampongus(message);
