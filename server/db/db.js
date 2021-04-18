@@ -18,6 +18,10 @@ const db = new Sequelize(
     //   //   // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
     //   rejectUnauthorized: false,
     // },
+    dialect: "postgres",
+    native: true,
+    ssl: true,
+    dialectOptions: { ssl: true },
   }
 );
 
