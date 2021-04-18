@@ -764,6 +764,7 @@ bot.on("callback_query", async (query) => {
 
   // contacting someone through fellow darbs / conf
   if (params["contact"]) {
+    // TODO: implement this fully
     bot.answerCallbackQuery(query.id, {
       text: "This feature isnt fully implemented yet lol.",
       show_alert: true,
