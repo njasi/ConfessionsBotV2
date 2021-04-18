@@ -1,9 +1,11 @@
-if (process.env.NODE_ENV == "deploy") {
+console.log(process.env.NODE_ENV);
+
+if (process.env.NODE_ENV) {
   // require("dotenv").config({ path: ".env_test" });
-  console.log("Deploy (test) mode")
+  console.log("Deploy (test) mode");
 } else {
   require("dotenv").config({ path: ".env_test" });
-  console.log("Develop mode")
+  console.log("Develop mode");
 }
 
 const path = require("path");
@@ -105,7 +107,7 @@ async function bootApp() {
 
 // for if I ever write tests lol
 if (require.main == module) {
-  bootApp();
+  bootApp().catch((e) => console.log(e));
 } else {
   createApp();
 }
