@@ -12,9 +12,9 @@ const db = new Sequelize(
     dialectOptions: {
       ssl: true,
     //   // https://github.com/sequelize/sequelize/issues/12083#issuecomment-648870469
-    //   require:true,
+      require:true,
     //   // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
-      rejectUnauthorized: false,
+      // rejectUnauthorized: false,
     },
   }
 );
