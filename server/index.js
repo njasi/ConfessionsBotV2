@@ -94,7 +94,7 @@ const startListening = () => {
   // require("./socket")(io);
 };
 
-const syncDb = () => db.sync();
+const syncDb = () => db.sync().catch((e) => console.log(e));
 
 async function bootApp() {
   // TODO: sessionstore sync
