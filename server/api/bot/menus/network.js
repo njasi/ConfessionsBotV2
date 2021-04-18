@@ -8,6 +8,7 @@ const { Menu } = require("./menu_class");
 const PAGE_LENGTH = 5;
 
 const chats_add = new Menu(async (from, args) => {
+  console.log("chats asddddd")
   const chat = await Chat.findOne({ where: { chat_id: `${from.id}` } });
   let text;
   let action_btn;

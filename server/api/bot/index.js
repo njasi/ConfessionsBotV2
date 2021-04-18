@@ -494,7 +494,7 @@ bot.onText(
           process.env.CONFESSIONS_CHANNEL_ID,
           process.env.CONFESSIONS_CHAT_ID,
         ].includes(`${message.chat.id}`) ||
-        chat.static
+        (chat !== null && chat.static)
       ) {
         fool_blongus_absolute_utter_clampongus(message);
         return;
