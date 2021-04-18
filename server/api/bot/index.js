@@ -619,11 +619,12 @@ bot.on("callback_query", async (query) => {
         params["chat_num"] = await Chat.count();
       }
       if (params["chat_remove"]) {
-        await Chat.destroy({
-          where: {
-            chat_id: params["chat_remove"],
-          },
+        const chat = await Chat.findOne({
+          where: { chat_id: params["chat_remove"] },
         });
+        if (!chat.static) {
+          await chat.destroy();
+        }
       }
     } else {
       bot.answerCallbackQuery(query.id, {
