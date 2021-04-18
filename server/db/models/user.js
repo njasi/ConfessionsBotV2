@@ -35,7 +35,14 @@ const User = db.define("user", {
     type: Sequelize.STRING,
   },
   state: {
-    type: Sequelize.ENUM("idle", "confessing", "w_fellows", "w_feedback"),
+    type: Sequelize.ENUM(
+      "idle",
+      "confessing",
+      "w_fellows",
+      "w_feedback",
+      "w_about",
+      "ignore"
+    ),
     defaultValue: "idle",
     allowNull: false,
   },

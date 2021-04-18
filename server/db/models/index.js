@@ -33,6 +33,10 @@ Confession.belongsTo(Chat);
 User.hasMany(Confession);
 Confession.belongsTo(User);
 
+// ik this is a bad setup, but im lazy so dont @ me
+// better to make another chat table with the target
+// and initiator along with the obscure info, but that's work so no
+// also i dislike having two chat relations
 User.hasOne(Message, { foreignKey: "target" });
 User.hasOne(Message, { foreignKey: "initiator" });
 

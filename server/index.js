@@ -1,7 +1,9 @@
 if (process.env.NODE_ENV == "deploy") {
-  require("dotenv").config({ path: ".env_deploy" });
+  require("dotenv").config({ path: ".env_test" });
+  console.log("Deploy (test) mode")
 } else {
   require("dotenv").config({ path: ".env_test" });
+  console.log("Develop mode")
 }
 
 const path = require("path");

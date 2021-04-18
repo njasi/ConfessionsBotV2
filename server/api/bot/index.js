@@ -46,7 +46,7 @@ bot.on("poll", async (answer, meta) => {
     const a_c = approve.reduce((a, b) => a + b.voter_count, 0);
     const d_c = disapprove.reduce((a, b) => a + b.voter_count, 0);
     if (a_c > d_c) {
-      // lastiof to default to lowest verification status
+      // last of to default to lowest verification status
       const mapped = approve.map((e) => e.voter_count);
       const index = mapped.lastIndexOf(Math.max(...mapped));
       user.verification_status = index + 1;
@@ -147,19 +147,49 @@ bot.on(
       const user = await User.findOne({
         where: { telegram_id: message.from.id },
       });
+
       if (user.locked) {
         return;
-      } else if (user.state == "w_fellows") {
-        const mess = await Message.create({
-          initiator: user.id,
-          from: user.id,
-          text: message.text,
-        });
+        // detect if they are sending a message to someone
+      } else if ((user.state == "ignore")) {
         return;
+      } else if (user.state == "w_fellows") {
+        const mess = await Message.findOne({
+          where: {
+            status: "in_progress",
+            [Op.or]: [
+              { target: user.id, from_init: false }, // target is responding
+              { initiator: user.id, from_init: true }, // initator is sending
+            ],
+          },
+        });
+
+        if (meta.type != "text") {
+          confs[wait_cw_index].swapMenu(MENUS.fellows_message_error, {
+            error: 1,
+          });
+          user.state = "ignore";
+          await user.save();
+          return;
+        } else if (message.text.length > 3000) {
+          confs[wait_cw_index].swapMenu(MENUS.fellows_message_error, {
+            error: 2,
+          });
+          user.state = "ignore";
+          await user.save();
+          return;
+        }
+
+        mess.text = message.text;
+        return;
+      } else if (user.state == "w_feedback") {
+        // TODO: implement feedback
+      } else if (user.state == "w_about") {
+        // TODO: about profiles for fellowdarbs
       }
+
       const confs = await user.getConfessions({ include: { model: Chat } });
       const stages = confs.map((e) => e.stage);
-
       // detect setting a content warning vs confssing
       const wait_cw_index = stages.indexOf("wait_cw");
       if (wait_cw_index != -1) {
@@ -358,7 +388,7 @@ bot.on(
         );
       }
     } else {
-      // must be a message in the chat
+      // must be a message in a group chat
     }
   }, (skip_on_command = true))
 );
@@ -454,11 +484,17 @@ bot.onText(
   aMid(
     vMid(async (message, reg) => {
       // only (chat) admins
+
+      const chat = await Chat.findOne({
+        where: { chat_id: `${message.chat.id}` },
+      });
+
       if (
         [
           process.env.CONFESSIONS_CHANNEL_ID,
           process.env.CONFESSIONS_CHAT_ID,
-        ].includes(`${message.chat.id}`)
+        ].includes(`${message.chat.id}`) ||
+        chat.static
       ) {
         fool_blongus_absolute_utter_clampongus(message);
         return;
@@ -534,6 +570,7 @@ bot.on("callback_query", async (query) => {
         where: { poll_id: query.message.poll.id },
       });
       user.verification_status = 4;
+      user.poll_id = null;
       await user.save();
       bot.deleteMessage(chat_id, message_id);
       MENUS.verify_accept.send(bot, { id: user.telegram_id });
@@ -704,6 +741,11 @@ bot.on("callback_query", async (query) => {
     await user.save();
   }
 
+  if (params["remove_m"]) {
+    const mess = await Message.findByPk(parseInt(params["remove_m"]));
+    await mess.destroy();
+  }
+
   // query up the confessioon info for all of the things below
   const shared_confession = await Confession.findOne({
     where: {
@@ -719,6 +761,7 @@ bot.on("callback_query", async (query) => {
 
   // contacting someone through fellow darbs / conf
   if (params["contact"]) {
+    // check that the user is even verified
     const from_user = await User.findOne({
       where: { telegram_id: query.from.id },
     });
@@ -730,35 +773,48 @@ bot.on("callback_query", async (query) => {
       return;
     }
 
+    // person is confessing, dont allow contact
     if (shared_confession != null) {
       bot.answerCallbackQuery(query.id, {
         text:
           "Please finish your current Confession before contacting someone.",
         show_alert: true,
       });
+      return;
     }
+
+    // person is already sending a message
     const messages = await Message.findAll({
-      where: { initiator: `${from_user.id}`, status: "in_progress" },
+      where: { initiator: from_user.id, status: "in_progress" },
     });
     if (messages.length > 0) {
       bot.answerCallbackQuery(query.id, {
         text:
-          "It seems you are already contacing someone, please finish that first.",
+          "It seems you are already contacing someone, please finish doing that first.",
         show_alert: true,
       });
+      return;
     }
 
+    // time for the actual message creation
     const common = {
-      from: user.id,
+      from_init: true,
       initiator: from_user.id,
-      obscure_initiator: true,
+      target: parseInt(params["contact"]),
+      chat_id: params["fc"] ? parseInt(params["fc"]) : null,
     };
     // someone is contacting a confessor
     if (params["conf"]) {
-      Message.create({ ...common, obscure_target: true });
-      MENUS.fellows_say.send(bot, query.from, {
-        ...params,
+      const mess = await Message.create({
+        ...common,
+        target_cnum: parseInt(params["conf"]),
       });
+
+      await MENUS.fellows_say.send(bot, query.from, {
+        ...params,
+        m_id: mess.id,
+      });
+
       return;
     } else {
       Message.create({ ...common, obscure_target: false });
@@ -779,6 +835,11 @@ bot.on("callback_query", async (query) => {
 
   // change allow response setting of a confession
   if ("allow_res" in params) {
+    bot.answerCallbackQuery(query.id, {
+      text: "I have sets to do perhaps ill make this work later.",
+      show_alert: true,
+    })
+    return
     shared_confession.allow_responses = params.allow_res == "true";
     await shared_confession.save();
   }

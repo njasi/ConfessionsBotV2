@@ -39,7 +39,11 @@ const fellows_say = new Menu(async (from, args) => {
     : "anon";
   return {
     text: `What would you like to say to ${name} (text only)?\n\nAfter you tell me I will give you privacy options.\n\nIf you want to cancel just use the cancel button`,
-    options: { ...ik([[butt("Cancel", "user_state=idle&delete=true")]]) },
+    options: {
+      ...ik([
+        [butt("Cancel", `user_state=idle&delete=true&remove_m=${args.m_id}`)],
+      ]),
+    },
   };
 });
 
@@ -49,11 +53,18 @@ const fellows_send_options = new Menu(async (from, args) => {
   let options = {
     ...ik([
       [butt("Send anonymously", "menu=fellows_text&p=false")],
-      [butt("Send", "menu=fellows_text&p=true"), butt("Cancel", "delete=true")],
+      [
+        butt("Send", "menu=fellows_text&p=true"),
+        butt("Cancel", `user_state=idle&delete=true&remove_m=${args.m_id}`),
+      ],
     ]),
   };
   return { text, options };
 }, "fellows_send_options");
+
+const fellows_message_error = new Menu(async (from, args)=> {
+  // TODO: display error
+},"fellows_message_error")
 
 const fellows_confirm_signed = new Menu(async (from, args) => {
   let text = "Your message says:\n\n";
@@ -86,6 +97,18 @@ const fellows_recieved = new Menu(async (from, args) => {
 
   return { text, options };
 }, "fellows_recieved");
+
+const fellows_list = new Menu(async (from, args)=> {
+  // TODO menu to see all of the fellows
+})
+
+const fellows_about = new Menu(async (from, args)=> {
+  // TODO see a fellow's about page
+})
+
+const fellows_edit = new Menu(async (from,args)=>{
+  // TODO edit your about info
+})
 
 module.exports = {
   // fellows_privacy, // select if you want your name to be known when messaging someone

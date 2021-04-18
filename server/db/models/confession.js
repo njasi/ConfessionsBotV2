@@ -182,7 +182,6 @@ Confession.prototype.send_helper = async function (
               [
                 {
                   text: "Contact OP",
-                  // url: "t.me/test123420bot",
                   callback_data: `contact=${user.id}&conf=${this.num}`,
                 },
               ],
