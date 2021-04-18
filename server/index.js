@@ -13,14 +13,12 @@ const compression = require("compression");
 
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
 const db = require("./db");
-console.log("BOI 1");
 const test_chats = require("./api/bot/test_chats");
 // const e = require("express");
 const PORT = process.env.PORT || 8080;
 const app = express();
 
 // load .env values
-console.log("BOI 2");
 
 module.exports = app;
 
@@ -34,7 +32,6 @@ const createApp = () => {
 
   // compression middleware
   app.use(compression());
-  console.log("BOI 3");
 
   // TODO: passport stuff
   // session middleware with passport
@@ -65,7 +62,6 @@ const createApp = () => {
       next();
     }
   });
-  console.log("BOI 4");
 
   // TODO: serve index.html
   // app.use("*", (req, res) => {
@@ -82,7 +78,6 @@ const createApp = () => {
 };
 
 const startListening = () => {
-  console.log("BOI 5");
 
   // start listening (and create a 'server' object representing our server)
   const server = app.listen(PORT, () =>
@@ -109,15 +104,11 @@ async function bootApp() {
   // await sessionStore.sync();
   // await sequelize.drop();
   // db.sync({ force: true });
-  console.log("BOI 6");
   await syncDb();
-  console.log("BOI 7");
   await createApp();
-  if (process.env.NODE_ENV == "deploy") {
-    console.log("BOI 8");
+  if (process.env.NODE_ENV == "production") {
     await test_chats();
   }
-  console.log("BOI 9");
 
   await startListening();
 }
