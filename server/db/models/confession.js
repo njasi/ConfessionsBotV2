@@ -131,7 +131,8 @@ const method_mappings = {
 
 Confession.prototype.send_helper = async function (
   chat_id,
-  cw_forward = false
+  cw_forward = false,
+  poll_forward = false
 ) {
   let user = null;
   if (this.allow_responses) {
@@ -224,10 +225,33 @@ Confession.prototype.send_helper = async function (
     }
     case "poll": {
       const u = await this.getUser();
-      return await bot.copyMessage(chat_id, u.telegram_id, this.file_id, {
-        caption: text,
-        ...options,
-      });
+
+      await bot.sendMessage(
+        chat_id,
+        text_add_prefix(
+          "See the poll below:",
+          this.num,
+          false,
+          false,
+          this.horny
+        ),
+        {
+          parse_mode: "HTML",
+        }
+      );
+      if (poll_forward) {
+        return;
+      }
+      const message = await bot.copyMessage(
+        chat_id,
+        u.telegram_id,
+        this.file_id,
+        {
+          caption: text,
+          ...options,
+        }
+      );
+      return message;
     }
     default: {
       return null;
@@ -268,11 +292,16 @@ Confession.prototype.send = async function () {
       let poll;
       let messages = [];
 
-      if (this.horny) {
-        poll = await this.send_helper_combined(process.env.HORNY_CHANNEL_ID);
+      poll = await this.send_helper_combined(
+        this.horny
+          ? process.env.HORNY_CHANNEL_ID
+          : process.env.CONFESSIONS_CHAT_ID
+      );
 
+      if (this.horny) {
         const horny_chats = await Chat.findAll({ where: { horny: true } });
         for (let i = 0; i < horny_chats.length; i++) {
+          await this.send_helper(horny_chats[i].chat_id, false, true);
           messages.push(
             bot.forwardMessage(
               horny_chats[i].chat_id,
@@ -282,7 +311,8 @@ Confession.prototype.send = async function () {
           );
         }
       } else {
-        poll = await this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
+        await this.send_helper(process.env.CONFESSIONS_CHANNEL_ID, false, true);
+        await this.send_helper(process.env.POLL_CHAT_ID, false, true);
         messages.push(
           bot.forwardMessage(
             process.env.CONFESSIONS_CHANNEL_ID,
@@ -299,6 +329,8 @@ Confession.prototype.send = async function () {
         );
         if (this.chat_id) {
           let chat = await this.getChat();
+          await this.send_helper(chat.chat_id, false, true);
+
           messages.push(
             bot.forwardMessage(
               chat.chat_id,
