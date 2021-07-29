@@ -191,7 +191,7 @@ Confession.prototype.send_helper = async function (
               [
                 {
                   text: "Contact OP",
-                  callback_data: `contact=${user.id}&conf=${this.num}`,
+                  callback_data: `user_state=w_fellows&contact=${user.id}&conf=${this.num}`,
                 },
               ],
             ],

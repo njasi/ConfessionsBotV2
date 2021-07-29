@@ -1,34 +1,17 @@
 const Sequelize = require("sequelize");
 const db = require("../db");
 const bot = require("../../api/bot/bot");
+const User = require("./user");
 
 const Message = db.define("message", {
-  chat_id: {
-    type: Sequelize.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-  },
   text: {
     type: Sequelize.TEXT,
+    allowNull: true
   },
   from_init: {
     type: Sequelize.BOOLEAN,
     default: true,
     allowNull: false,
-  },
-  obscure_initiator: {
-    type: Sequelize.BOOLEAN,
-    defaultValue: true,
-    allowNull: false,
-  },
-  obscure_target: {
-    type: Sequelize.BOOLEAN,
-    defaultValue: true,
-    allowNull: false,
-  },
-  target_cnum: {
-    type: Sequelize.INTEGER,
-    defaultValu: null,
   },
   status: {
     type: Sequelize.ENUM("in_progress", "sent", "received"),
@@ -48,12 +31,11 @@ Message.beforeValidate(async (mess, options) => {
   }
 });
 
-
 Message.prototype.swapMenu = async function (new_menu, options = {}) {
   let user;
-  if(this.from_init){
+  if (this.from_init) {
     user = await this.getInitiator();
-  }else{
+  } else {
     user = await this.getTarget();
   }
 
@@ -74,6 +56,34 @@ Message.prototype.swapMenu = async function (new_menu, options = {}) {
     parse_mode: "HTML",
     ...data.options,
   });
+};
+
+Message.prototype.send = async function () {
+  const init = await User.findByPk(this.initiator);
+  const targ = await User.findByPk(this.target);
+  console.log(init, targ);
+
+  // bot.sendMessage()
+
+  let message_data;
+  if (this.from_init) {
+    message_data = {
+      chat_id: targ.telegram_id,
+      text: `${init.name} ${this.text}`,
+      options: {},
+    };
+  } else {
+    message_data = {
+      chat_id: init.telegram_id,
+      text: `${this.obscure_target ? targ.name : ""} ${this.text}`,
+      options: {},
+    };
+  }
+  bot.sendMessage(
+    message_data.chat_id,
+    message_data.text,
+    message_data.options
+  );
 };
 
 module.exports = Message;

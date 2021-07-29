@@ -170,6 +170,8 @@ bot.on(
           },
         });
 
+        console.log("\n\nMessage:\n", mess,"\nMeta:\n",meta);
+
         if (meta.type != "text") {
           confs[wait_cw_index].swapMenu(MENUS.fellows_message_error, {
             error: 1,
@@ -187,6 +189,9 @@ bot.on(
         }
 
         mess.text = message.text;
+        mess.send()
+        await mess.save()
+
         return;
       } else if (user.state == "w_feedback") {
         // TODO: implement feedback
@@ -741,10 +746,10 @@ bot.on("callback_query", async (query) => {
     }
     await user.save();
   }
-
+  console.log(params);
   if (params.user_state) {
     if (params.user_state == "w_fellows") {
-      return;
+      // TODO somthing here ig
     }
     const user = await User.findOne({ where: { telegram_id: query.from.id } });
     user.state = params.user_state;
@@ -771,17 +776,18 @@ bot.on("callback_query", async (query) => {
 
   // contacting someone through fellow darbs / conf
   if (params.contact) {
-    // TODO: implement this fully
-    bot.answerCallbackQuery(query.id, {
-      text: "This feature isnt fully implemented yet lol.",
-      show_alert: true,
-    });
+    // TODO: remove this thing
+    // bot.answerCallbackQuery(query.id, {
+    //   text: "This feature isnt fully implemented yet lol.",
+    //   show_alert: true,
+    // });
 
-    return;
+    // TODO: implement this fully
     // check that the user is even verified
     const from_user = await User.findOne({
       where: { telegram_id: query.from.id },
     });
+
     if (from_user == null || from_user.verification_status < 1) {
       bot.answerCallbackQuery(query.id, {
         text: "Please verify with the bot first.",

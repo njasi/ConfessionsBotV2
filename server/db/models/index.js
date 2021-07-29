@@ -24,7 +24,9 @@ const Confession = require("./confession");
 // ~max 200 rows = 5700
 const Chat = require("./chat");
 // ~max 2000 rows = 7700
-const Message = require("./message");
+const FellowsMessage = require("./fellows_message");
+// ~max something = 7700+
+const FellowsChat = require("./fellows_chat");
 
 // The extra chat the confession is sent to
 Chat.hasMany(Confession);
@@ -34,16 +36,19 @@ User.hasMany(Confession);
 Confession.belongsTo(User);
 
 // ik this is a bad setup, but im lazy so dont @ me
-// better to make another chat table with the target
-// and initiator along with the obscure info, but that's work so no
-// also i dislike having two chat relations
-User.hasOne(Message, { foreignKey: "target" });
-User.hasOne(Message, { foreignKey: "initiator" });
+
+FellowsMessage.belongsTo(Chat);
+FellowsChat.hasMany(FellowsMessage);
+
+// strangly doing it this way puts the foriegn key on the message table...
+FellowsChat.hasOne(User, { foreignKey: "target" });
+FellowsChat.hasOne(User, { foreignKey: "initiator" });
 
 module.exports = {
   Keyval,
   User,
   Confession,
   Chat,
-  Message,
+  FellowsMessage,
+  FellowsChat,
 };
