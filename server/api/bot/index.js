@@ -28,7 +28,7 @@ router.post(`/${process.env.BOT_TOKEN}`, (req, res, next) => {
   }
 });
 
-bot.on("poll", async (answer, meta) => {
+bot.on("poll", async (answer) => {
   const num = await User.count({
     where: { verification_status: { [Op.gt]: 0 } },
   });
@@ -104,7 +104,7 @@ bot.on("polling_error", (err) => w(err));
 /**
  * removes people from the verification chat if they are not verified
  */
-bot.on("new_chat_members", async (message, meta) => {
+bot.on("new_chat_members", async (message) => {
   for (user of message.new_chat_members) {
     const v = await verifyUser(user.id);
     if (!v) {
@@ -127,13 +127,14 @@ bot.on("new_chat_members", async (message, meta) => {
   }
 });
 
-bot.on("left_chat_member", async (message, meta) => {
-  const v_chat_size = await Keyval.findOne({
-    where: { key: "v_chat_size" },
-  });
-  v_chat_size.value--;
-  await v_chat_size.save();
-});
+// TODO fix for only the v chat
+// bot.on("left_chat_member", async (message, meta) => {
+//   const v_chat_size = await Keyval.findOne({
+//     where: { key: "v_chat_size" },
+//   });
+//   v_chat_size.value--;
+//   await v_chat_size.save();
+// });
 
 /**
  * seperate .on message used to check if any confessions should be sent
@@ -404,7 +405,7 @@ bot.on(
  */
 bot.onText(
   commandRegexDict.verify,
-  cMid((message, reg) => {
+  cMid((message) => {
     MENUS.verify.send(bot, message.from, { from_command: true });
   })
 );
@@ -414,7 +415,7 @@ bot.onText(
  */
 bot.onText(commandRegexDict.start, (message, reg) => {
   // TODO detect rickroll param somehow and send them a vid
-  cvMid((message, reg) => {
+  cvMid((message) => {
     MENUS.start.send(bot, message.from, { from_command: true });
   })(message, reg);
 });
@@ -424,7 +425,7 @@ bot.onText(commandRegexDict.start, (message, reg) => {
  */
 bot.onText(
   commandRegexDict.lock,
-  cvMid((message, reg) => {
+  cvMid((message) => {
     MENUS.toggle_lock.send(bot, message.from, {
       from_command: true,
       command: "lock",
@@ -434,7 +435,7 @@ bot.onText(
 
 bot.onText(
   commandRegexDict.unlock,
-  cvMid((message, reg) => {
+  cvMid((message) => {
     MENUS.toggle_lock.send(bot, message.from, {
       from_command: true,
       command: "unlock",
@@ -447,7 +448,7 @@ bot.onText(
  */
 bot.onText(
   commandRegexDict.poll,
-  cvMid((message, reg) => {
+  cvMid((message) => {
     MENUS.poll_info.send(bot, message.from, { from_command: true });
   })
 );
@@ -457,7 +458,7 @@ bot.onText(
  */
 bot.onText(
   commandRegexDict.help,
-  cvMid((message, reg) => {
+  cvMid((message) => {
     MENUS.help.send(bot, message.from, { from_command: true });
   })
 );
@@ -467,7 +468,7 @@ bot.onText(
  */
 bot.onText(
   commandRegexDict.about,
-  cvMid((message, reg) => {
+  cvMid((message) => {
     MENUS.about.send(bot, message.from, { from_command: true });
   })
 );
@@ -477,7 +478,7 @@ bot.onText(
  */
 bot.onText(
   commandRegexDict.fellows_info,
-  cvMid((message, reg) => {
+  cvMid((message) => {
     MENUS.fellows_info.send(bot, message.from, { from_command: true });
   })
 );
@@ -488,7 +489,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.join_network,
   aMid(
-    vMid(async (message, reg) => {
+    vMid(async (message) => {
       // only (chat) admins
 
       const chat = await Chat.findOne({
@@ -521,7 +522,7 @@ bot.onText(
   commandRegexDict.leave_network,
   aMid(
     // only (chat) admins
-    vMid(async (message, reg) => {
+    vMid(async (message) => {
       if (
         [
           process.env.CONFESSIONS_CHANNEL_ID,
@@ -543,12 +544,12 @@ bot.onText(
 
 bot.onText(
   commandRegexDict.fellows,
-  cvMid(async (message, reg) => {
+  cvMid(async (message) => {
     MENUS.fellows_settings.send(bot, message.from, { from_command: "true" });
   })
 );
 
-bot.on("migrate_to_chat_id", async (message, meta) => {
+bot.on("migrate_to_chat_id", async (message) => {
   bot.sendMessage(
     process.env.ADMIN_ID,
     `Migrate To:\n${JSON.stringify(message)}`
@@ -569,9 +570,9 @@ bot.on("callback_query", async (query) => {
   const message_id = query.message.message_id;
 
   // admin only cb buttons
-  if (params["rad"] == "true" && query.from.id == process.env.ADMIN_ID) {
+  if (params.rad == "true" && query.from.id == process.env.ADMIN_ID) {
     // admin force approval
-    if (params["approve_id"] !== null) {
+    if (params.approve_id !== null) {
       const user = await User.findOne({
         where: { poll_id: query.message.poll.id },
       });
@@ -585,9 +586,10 @@ bot.on("callback_query", async (query) => {
   }
 
   // commands that you need to be a chat admin for
-  if (params["c_ad"]) {
+  if (params.c_ad) {
     // c_ad for chat admin
     const chat_admins = await bot.getChatAdministrators(chat_id);
+    let chat_info = await bot.getChat(params.chat_add);
     if (
       [
         parseInt(process.env.ADMIN_ID),
@@ -595,10 +597,10 @@ bot.on("callback_query", async (query) => {
       ].includes(query.from.id)
     ) {
       // adding a chat to the supported list
-      if (params["chat_add"]) {
+      if (params.chat_add) {
         let chat = await Chat.findOne({
           where: {
-            chat_id: params["chat_add"],
+            chat_id: params.chat_add,
           },
         });
         if (chat) {
@@ -609,24 +611,23 @@ bot.on("callback_query", async (query) => {
           return;
         }
         try {
-          chat_info = await bot.getChat(params["chat_add"]);
           // test if the message is old and the group has since changed to a super group
-          res = await bot.sendMessage(params["chat_add"], "/test", {
+          let res = await bot.sendMessage(params.chat_add, "/test", {
             disable_notification: true,
           });
-          await bot.deleteMessage(params["chat_add"], res.message_id);
+          await bot.deleteMessage(params.chat_add, res.message_id);
         } catch (err) {
           return; // chat is old (probably)
         }
-        created_chat = await Chat.create({
+        await Chat.create({
           name: chat_info.title,
           chat_id: chat_info.id,
         });
-        params["chat_num"] = await Chat.count();
+        params.chat_num = await Chat.count();
       }
-      if (params["chat_remove"]) {
+      if (params.chat_remove) {
         const chat = await Chat.findOne({
-          where: { chat_id: params["chat_remove"] },
+          where: { chat_id: params.chat_remove },
         });
         if (!chat.static) {
           await chat.destroy();
@@ -644,7 +645,7 @@ bot.on("callback_query", async (query) => {
 
   // user tapped view content button on a cw confession, send them the message
   if (params.cw_confession_id) {
-    const cw_id = parseInt(params["cw_confession_id"]);
+    const cw_id = parseInt(params.cw_confession_id);
 
     const from_user = await User.findOne({
       where: { telegram_id: query.from.id },
@@ -657,11 +658,10 @@ bot.on("callback_query", async (query) => {
       return;
     }
 
-    conf = await Confession.findByPk(cw_id);
+    let conf = await Confession.findByPk(cw_id);
     if (conf == null) {
       bot.answerCallbackQuery(query.id, {
-        text:
-          "It seems that this confession was removed... \n\n(or is realy old)",
+        text: "It seems that this confession was removed... \n\n(or is realy old)",
         show_alert: true,
       });
       return;
@@ -675,8 +675,8 @@ bot.on("callback_query", async (query) => {
   }
 
   // removes confession of id params['remove_confession'], before the menu swap as some swaps remove confessions
-  if (params["remove_confession"]) {
-    const conf_id = parseInt(params["remove_confession"]);
+  if (params.remove_confession) {
+    const conf_id = parseInt(params.remove_confession);
     const conf = await Confession.findOne({
       where: { id: conf_id },
       include: { model: User, where: { telegram_id: query.from.id } },
@@ -719,19 +719,19 @@ bot.on("callback_query", async (query) => {
   }
 
   // deletes messages from the bot when a user taps the button
-  if (params["delete"]) {
+  if (params.delete) {
     bot.deleteMessage(
       chat_id,
-      params["delete"] == "true" ? message_id : params["delete"]
+      params.delete == "true" ? message_id : params.delete
     );
   }
 
   /**
    * register or retire as a fellowdarb
    */
-  if (params["register"]) {
+  if (params.register) {
     const user = await User.findOne({ where: { telegram_id: query.from.id } });
-    switch (params["register"]) {
+    switch (params.register) {
       case "true":
         user.fellow_darb = true;
         break;
@@ -742,17 +742,17 @@ bot.on("callback_query", async (query) => {
     await user.save();
   }
 
-  if (params["user_state"]) {
-    if (params["user_state"] == "w_fellows") {
+  if (params.user_state) {
+    if (params.user_state == "w_fellows") {
       return;
     }
     const user = await User.findOne({ where: { telegram_id: query.from.id } });
-    user.state = params["user_state"];
+    user.state = params.user_state;
     await user.save();
   }
 
-  if (params["remove_m"]) {
-    const mess = await Message.findByPk(parseInt(params["remove_m"]));
+  if (params.remove_m) {
+    const mess = await Message.findByPk(parseInt(params.remove_m));
     await mess.destroy();
   }
 
@@ -770,7 +770,7 @@ bot.on("callback_query", async (query) => {
   });
 
   // contacting someone through fellow darbs / conf
-  if (params["contact"]) {
+  if (params.contact) {
     // TODO: implement this fully
     bot.answerCallbackQuery(query.id, {
       text: "This feature isnt fully implemented yet lol.",
@@ -793,8 +793,7 @@ bot.on("callback_query", async (query) => {
     // person is confessing, dont allow contact
     if (shared_confession != null) {
       bot.answerCallbackQuery(query.id, {
-        text:
-          "Please finish your current Confession before contacting someone.",
+        text: "Please finish your current Confession before contacting someone.",
         show_alert: true,
       });
       return;
@@ -806,8 +805,7 @@ bot.on("callback_query", async (query) => {
     });
     if (messages.length > 0) {
       bot.answerCallbackQuery(query.id, {
-        text:
-          "It seems you are already contacing someone, please finish doing that first.",
+        text: "It seems you are already contacing someone, please finish doing that first.",
         show_alert: true,
       });
       return;
@@ -817,14 +815,14 @@ bot.on("callback_query", async (query) => {
     const common = {
       from_init: true,
       initiator: from_user.id,
-      target: parseInt(params["contact"]),
-      chat_id: params["fc"] ? parseInt(params["fc"]) : null,
+      target: parseInt(params.contact),
+      chat_id: params.fc ? parseInt(params.fc) : null,
     };
     // someone is contacting a confessor
-    if (params["conf"]) {
+    if (params.conf) {
       const mess = await Message.create({
         ...common,
-        target_cnum: parseInt(params["conf"]),
+        target_cnum: parseInt(params.conf),
       });
 
       await MENUS.fellows_say.send(bot, query.from, {
@@ -844,7 +842,7 @@ bot.on("callback_query", async (query) => {
   // clear the content warning of a confession
   if ("clear_cw" in params) {
     shared_confession.content_warning = null;
-    const conf_id = parseInt(params["clear_cw"]);
+    const conf_id = parseInt(params.clear_cw);
     const conf = await Confession.findByPk(conf_id);
     conf.content_warning = null;
     await conf.save();
@@ -854,8 +852,7 @@ bot.on("callback_query", async (query) => {
   if ("allow_res" in params) {
     if (params.allow_res == "true") {
       bot.answerCallbackQuery(query.id, {
-        text:
-          "Note that ths feature will currently not do anything.\n\nHowever it will allow responses to your confession once I finish it.",
+        text: "Note that ths feature will currently not do anything.\n\nHowever it will allow responses to your confession once I finish it.",
         show_alert: true,
       });
     }
@@ -864,24 +861,24 @@ bot.on("callback_query", async (query) => {
   }
 
   // set the stage of a confession
-  if (params["set_stage"]) {
-    if (params["set_stage"] == "wait_cw" && shared_confession.type == "poll") {
+  if (params.set_stage) {
+    if (params.set_stage == "wait_cw" && shared_confession.type == "poll") {
       bot.answerCallbackQuery(query.id, {
         text: "You can't put a content warning on a poll",
         show_alert: true,
       });
       return;
     }
-    shared_confession.stage = params["set_stage"];
+    shared_confession.stage = params.set_stage;
     await shared_confession.save();
   }
 
   // sets that aux chat to the id provided in target_id
-  if (params["target_id"]) {
-    if (params["target_id"] == "-1") {
+  if (params.target_id) {
+    if (params.target_id == "-1") {
       await shared_confession.setChat(null);
     } else {
-      const chat = await Chat.findByPk(parseInt(params["target_id"]));
+      const chat = await Chat.findByPk(parseInt(params.target_id));
 
       // chat has been removed while in the menu or some error happened
       if (chat == null) {
@@ -896,8 +893,7 @@ bot.on("callback_query", async (query) => {
       const chat_member = await bot.getChatMember(chat.chat_id, query.from.id);
       if (!chat_member || chat_member.status == "left") {
         bot.answerCallbackQuery(query.id, {
-          text:
-            "You cannot send confessions to this chat as you are not in it.",
+          text: "You cannot send confessions to this chat as you are not in it.",
           show_alert: true,
         });
         return;
@@ -907,8 +903,8 @@ bot.on("callback_query", async (query) => {
   }
 
   // setting the message the confession wil reply to
-  if (params["c_id"] && params["m_id"]) {
-    const num = parseInt(params["c_id"]);
+  if (params.c_id && params.m_id) {
+    const num = parseInt(params.c_id);
     let chat_id = null;
     switch (num) {
       case -1:
@@ -917,19 +913,20 @@ bot.on("callback_query", async (query) => {
       case -2:
         chat_id = process.env.CONFESSIONS_CHANNEL_ID;
         break;
-      default:
+      default: {
         const chat = await Chat.findByPk(num);
         chat_id = chat.chat_id;
+      }
     }
     shared_confession.stage = "idle";
-    shared_confession.reply_message = [[chat_id, params["m_id"]]];
+    shared_confession.reply_message = [[chat_id, params.m_id]];
     // TODO detect reply to a confession
 
     await shared_confession.save();
   }
 
   // clear reply info
-  if (params["clear_ri"]) {
+  if (params.clear_ri) {
     shared_confession.reply_message = null;
     await shared_confession.save();
   }
@@ -938,10 +935,10 @@ bot.on("callback_query", async (query) => {
   detectAndSwapMenu(query, params, bot);
 
   // select the delay time at which the confession will be sent
-  if (params["send_time"]) {
+  if (params.send_time) {
     let send_time = Date.now();
     const rnd = Math.random();
-    switch (params["send_time"]) {
+    switch (params.send_time) {
       case "0":
         send_time -= 420 * 69;
         break;

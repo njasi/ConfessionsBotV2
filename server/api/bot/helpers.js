@@ -1,5 +1,3 @@
-const TelegramBot = require("node-telegram-bot-api");
-
 /**
  *  Checks if a message is a dm to the bot
  * @param {TelegramBot.message} message - message the bot will be checking
@@ -22,7 +20,7 @@ function isDm(message) {
  */
 function getFullName(user, username = true) {
   let first,
-    last,
+    last = "",
     un = "";
   if (user.first_name) {
     first = user.first_name;
@@ -47,7 +45,7 @@ function params_from_string(str) {
 }
 
 function int_to_ordinal(num) {
-  str_num = `${num}`;
+  let str_num = `${num}`;
   switch (str_num[str_num.length - 1]) {
     case "1":
       return `${num}st`;

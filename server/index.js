@@ -13,7 +13,7 @@ const compression = require("compression");
 
 // const SequelizeStore = require("connect-session-sequelize")(session.Store);
 const db = require("./db");
-const test_chats = require("./api/bot/test_chats");
+// const test_chats = require("./api/bot/test_chats");
 // const e = require("express");
 const PORT = process.env.PORT || 8080;
 const app = express();
@@ -104,7 +104,7 @@ async function bootApp() {
   await syncDb();
   await createApp();
   if (process.env.NODE_ENV == "production") {
-    await test_chats();
+    // await test_chats();
   }
 
   await startListening();

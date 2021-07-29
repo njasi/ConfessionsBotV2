@@ -82,7 +82,7 @@ const chatlist = new Menu(async (from, args) => {
         ]
       : []),
   ];
-  nconf = confs[0];
+  let nconf = confs[0];
 
   const target = `<b>Current Target Chat:</b>\n\t\t${
     nconf.chatId == null ? "❌ - no chat selected" : `✅ - ${nconf.chat.name}`
