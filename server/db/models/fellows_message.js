@@ -3,10 +3,10 @@ const db = require("../db");
 const bot = require("../../api/bot/bot");
 const User = require("./user");
 
-const Message = db.define("message", {
+const Message = db.define("fellowsmessage", {
   text: {
     type: Sequelize.TEXT,
-    allowNull: true
+    allowNull: true,
   },
   from_init: {
     type: Sequelize.BOOLEAN,
@@ -24,22 +24,15 @@ const Message = db.define("message", {
   },
 });
 
-Message.beforeValidate(async (mess, options) => {
-  if (!mess.chat_id) {
-    const max = await Message.max("chat_id");
-    mess.chat_id = isNaN(max) ? 0 : max + 1;
-  }
-});
-
 Message.prototype.swapMenu = async function (new_menu, options = {}) {
   let user;
+  fchat = await this.getFellowschat();
   if (this.from_init) {
-    user = await this.getInitiator();
+    user = await fchat.getInitiator();
   } else {
-    user = await this.getTarget();
+    user = await fchat.getTarget();
   }
 
-  // console.log(user)
 
   const data = await new_menu.load(
     { id: user.telegram_id },
@@ -59,8 +52,10 @@ Message.prototype.swapMenu = async function (new_menu, options = {}) {
 };
 
 Message.prototype.send = async function () {
-  const init = await User.findByPk(this.initiator);
-  const targ = await User.findByPk(this.target);
+  const fchat = await this.getFellowschat();
+  const init = await fchat.getInitiator();
+  const targ = await fchat.getTarget();
+
   console.log(init, targ);
 
   // bot.sendMessage()

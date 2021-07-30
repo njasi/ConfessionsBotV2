@@ -1,5 +1,5 @@
 const commandRegexDict = {
-  start: command("start"),
+  start: command("start", ["menu","fellows"]),
   verify: command("verify"),
   lock: command("lock"),
   unlock: command("unlock"),
@@ -7,14 +7,17 @@ const commandRegexDict = {
   register: command("register"),
   help: command("help"),
   about: command("about"),
+  fellow_darbs: command("fellowdarbs"),
   fellows_info: command("fellowsinfo"),
-  fellows: command("fellowssettings"),
+  fellows_settings: command("fellowssettings"),
+  fellows_list: command("fellowslist"),
   join_network: command("joinnetwork"),
   leave_network: command("leavenetwork"),
 };
 
-function command(name) {
-  let reg = new RegExp(`^\/${name}($|@${process.env.BOT_USERNAME}$)`);
+function command(name, extra = []) {
+  let insert = extra.length == 0 ? name : `(${[name, ...extra].join("|")})`;
+  let reg = new RegExp(`^\/${insert}($|@${process.env.BOT_USERNAME}$)`);
   return reg;
 }
 

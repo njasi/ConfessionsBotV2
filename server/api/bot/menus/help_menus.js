@@ -30,7 +30,7 @@ const about = new Menu(() => {
 
 const commands = new Menu(() => {
   const text =
-    "<b>Commands:</b> \n/poll\nSend an anon poll to the confessions chats. \n/lock\nThe bot will no longer read your messages.\n/unlock\nThe bot will now read your messages.\n/cancel\nCancel current action.[oof]\n/feedback\nSend anon feedback to the creator (@njasi). Please be nice.[oof]\n/help,/about\n...\n\n<b>Fellow Darbs Features:</b> \n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.[oof]\n/retire\nYou will be taken off of the fellows list.[oof]\n/fellowdarbs\nthis gives the list of darbs and the commands to contact them.[oof]\n/fellowsinfo\nGet more information on the fellow Darb feature\n\n";
+    "<b>Commands:</b> \n/start, /menu, /fellows\nBring up the default non confession menu.\n/poll\nSend an anon poll to the confessions chats. \n/lock\nThe bot will no longer read your messages.\n/unlock\nThe bot will now read your messages.\n/cancel\nCancel current action.[oof]\n/feedback\nSend anon feedback to the creator (@njasi). Please be nice.[oof]\n/help,/about\n...\n\n<b>Fellow Darbs Features:</b> \n/register\nYou will be registered to the list of fellows and people will be able to request to talk to you anonymously.[oof]\n/retire\nYou will be taken off of the fellows list.\n/fellowdarbs\nBrings up the main fellowdarbs menu.\n/fellowslist\nGives the list of fellowdarbs and the option to view their profiles.\n/fellowsinfo\nGet more information on the fellow Darb feature\n\n";
   const options = {
     ...ik([[butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")]]),
   };

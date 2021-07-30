@@ -37,12 +37,12 @@ Confession.belongsTo(User);
 
 // ik this is a bad setup, but im lazy so dont @ me
 
-FellowsMessage.belongsTo(Chat);
 FellowsChat.hasMany(FellowsMessage);
+FellowsMessage.belongsTo(Chat);
 
-// strangly doing it this way puts the foriegn key on the message table...
-FellowsChat.hasOne(User, { foreignKey: "target" });
-FellowsChat.hasOne(User, { foreignKey: "initiator" });
+// strangly doing it this way puts the foriegn key on the chat relation...
+User.hasOne(FellowsChat, { foreignKey: "target" });
+User.hasOne(FellowsChat, { foreignKey: "initiator" });
 
 module.exports = {
   Keyval,

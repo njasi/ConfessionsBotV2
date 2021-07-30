@@ -55,7 +55,13 @@ const start = new Menu(async (from, args) => {
   const options = {
     ...ik([
       ...(args.from_command || !active
-        ? []
+        ? [
+            [butt("Fellowdarbs List", "menu=fellows_list")],
+            [
+              butt("Fellowdarbs Info", "menu=fellows_info"),
+              butt("Fellowdarbs Settings", "menu=fellows_settings"),
+            ],
+          ]
         : [
             [
               butt("Send Confession", "menu=send"),

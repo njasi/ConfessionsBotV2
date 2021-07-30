@@ -5,7 +5,14 @@ const { isDm, params_from_string } = require("./helpers");
 const { verifyUser } = require("./verify_poll");
 const { commandRegexDict } = require("./config/command_regexes");
 const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus/index");
-const { User, Confession, Keyval, Chat, Message } = require("../../db/models");
+const {
+  User,
+  Confession,
+  Keyval,
+  Chat,
+  FellowsMessage,
+  FellowsChat,
+} = require("../../db/models");
 const { Op } = require("sequelize");
 const {
   cMid,
@@ -97,9 +104,10 @@ bot.on("webhook_error", (error) => {
     process.env.ADMIN_ID,
     `There was a webhook error:\n${error.trace}`
   );
+  console.error(`There was a webhook error:\n${error.trace}`);
 });
 
-bot.on("polling_error", (err) => w(err));
+bot.on("polling_error", (err) => console.log(err));
 
 /**
  * removes people from the verification chat if they are not verified
@@ -160,7 +168,7 @@ bot.on(
       } else if (user.state == "ignore") {
         return;
       } else if (user.state == "w_fellows") {
-        const mess = await Message.findOne({
+        const mess = await FellowsMessage.findOne({
           where: {
             status: "in_progress",
             [Op.or]: [
@@ -170,7 +178,7 @@ bot.on(
           },
         });
 
-        console.log("\n\nMessage:\n", mess,"\nMeta:\n",meta);
+        console.log("\n\nMessage:\n", mess, "\nMeta:\n", meta);
 
         if (meta.type != "text") {
           confs[wait_cw_index].swapMenu(MENUS.fellows_message_error, {
@@ -189,8 +197,8 @@ bot.on(
         }
 
         mess.text = message.text;
-        mess.send()
-        await mess.save()
+        mess.send();
+        await mess.save();
 
         return;
       } else if (user.state == "w_feedback") {
@@ -489,6 +497,36 @@ bot.onText(
 );
 
 /**
+ * 'Fellowdarbs' menu
+ */
+bot.onText(
+  commandRegexDict.fellow_darbs,
+  cvMid((message) => {
+    MENUS.start.send(bot, message.from, { from_command: true });
+  })
+);
+
+/**
+ * Fellows Settings
+ */
+bot.onText(
+  commandRegexDict.fellows_settings,
+  cvMid(async (message) => {
+    MENUS.fellows_settings.send(bot, message.from, { from_command: "true" });
+  })
+);
+
+/**
+ * Fellowdarbs list
+ */
+bot.onText(
+  commandRegexDict.fellows_settings,
+  cvMid(async (message) => {
+    MENUS.fellows_list.send(bot, message.from, { from_command: "true" });
+  })
+);
+
+/**
  * add chat to listed
  */
 bot.onText(
@@ -545,13 +583,6 @@ bot.onText(
       });
     })
   )
-);
-
-bot.onText(
-  commandRegexDict.fellows,
-  cvMid(async (message) => {
-    MENUS.fellows_settings.send(bot, message.from, { from_command: "true" });
-  })
 );
 
 bot.on("migrate_to_chat_id", async (message) => {
@@ -757,7 +788,7 @@ bot.on("callback_query", async (query) => {
   }
 
   if (params.remove_m) {
-    const mess = await Message.findByPk(parseInt(params.remove_m));
+    const mess = await FellowsMessage.findByPk(parseInt(params.remove_m));
     await mess.destroy();
   }
 
@@ -806,8 +837,12 @@ bot.on("callback_query", async (query) => {
     }
 
     // person is already sending a message
-    const messages = await Message.findAll({
-      where: { initiator: from_user.id, status: "in_progress" },
+    const messages = await FellowsChat.findAll({
+      include: {
+        model: FellowsMessage,
+        where: { status: "in_progress", from_init: true },
+      },
+      where: { initiator: from_user.id },
     });
     if (messages.length > 0) {
       bot.answerCallbackQuery(query.id, {
@@ -818,31 +853,36 @@ bot.on("callback_query", async (query) => {
     }
 
     // time for the actual message creation
-    const common = {
-      from_init: true,
-      initiator: from_user.id,
+    const fchat = await FellowsChat.create({
       target: parseInt(params.contact),
-      chat_id: params.fc ? parseInt(params.fc) : null,
-    };
+      initiator: from_user.id,
+      from_init: true,
+      target_cnum: params.conf != null ? parseInt(params.conf) : null,
+    });
+
+    const mess = await FellowsMessage.create({
+      from_init: true,
+      fellowschatId: fchat.id,
+    });
+
     // someone is contacting a confessor
     if (params.conf) {
-      const mess = await Message.create({
-        ...common,
-        target_cnum: parseInt(params.conf),
-      });
-
-      await MENUS.fellows_say.send(bot, query.from, {
-        ...params,
-        m_id: mess.id,
-      });
-
-      return;
+      fchat.name_target = `Confessor ${params.conf}`;
+    } else if (params.rfellow) {
+      // TODO: select random person somehow
     } else {
-      Message.create({ ...common, obscure_target: false });
-      MENUS.fellows_say.send(bot, query.from, {});
-
+      fchat.obscure_target = false;
       // TODO: swap into menu?
     }
+    await fchat.save();
+
+    await MENUS.fellows_say.send(bot, query.from, {
+      ...params,
+      fmess: mess,
+      fchat,
+    });
+
+    return;
   }
 
   // clear the content warning of a confession
