@@ -58,7 +58,6 @@ Message.prototype.send = async function () {
 
   console.log(init, targ);
 
-  // bot.sendMessage()
 
   let message_data;
   if (this.from_init) {

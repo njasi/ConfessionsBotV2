@@ -236,7 +236,7 @@ const set_reply_error = new Menu(async (from, args) => {
  */
 const toggle_lock = new Menu((from, args) => {
   const l = args.user.locked;
-  if (args.from_command) {
+  if (args.fc) {
     if (args.command == "lock") {
       return {
         text: l

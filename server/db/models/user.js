@@ -41,13 +41,22 @@ const User = db.define("user", {
       "w_fellows",
       "w_feedback",
       "w_about",
-      "ignore"
+      "ignore",
+      "editing_pfp",
+      "editing_bio",
+      "editing_contact"
     ),
     defaultValue: "idle",
     allowNull: false,
   },
   misc: {
     type: Sequelize.JSON,
+    defaultValue: {
+      fellows_pic:
+        "AgACAgEAAx0CVRt_vgACATJhBVKRwisvkIxakIH2Xeq1QSCgJwACe6kxG5QiMURQpreK4GSw0QEAAwIAA3gAAyAE",
+      fellows_bio: "filler bio...",
+      fellows_contact: "filler contact...",
+    },
   },
 });
 

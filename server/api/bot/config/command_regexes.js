@@ -9,7 +9,7 @@ const commandRegexDict = {
   about: command("about"),
   fellow_darbs: command("fellowdarbs"),
   fellows_info: command("fellowsinfo"),
-  fellows_settings: command("fellowssettings"),
+  f_settings: command("fellowssettings"),
   fellows_list: command("fellowslist"),
   join_network: command("joinnetwork"),
   leave_network: command("leavenetwork"),

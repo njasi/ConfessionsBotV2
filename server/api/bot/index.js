@@ -164,10 +164,11 @@ bot.on(
 
       if (user.locked) {
         return;
-        // detect if they are sending a message to someone
       } else if (user.state == "ignore") {
+        // ignore user input
         return;
       } else if (user.state == "w_fellows") {
+        // detect if they are sending a message to someone
         const mess = await FellowsMessage.findOne({
           where: {
             status: "in_progress",
@@ -177,8 +178,6 @@ bot.on(
             ],
           },
         });
-
-        console.log("\n\nMessage:\n", mess, "\nMeta:\n", meta);
 
         if (meta.type != "text") {
           confs[wait_cw_index].swapMenu(MENUS.fellows_message_error, {
@@ -378,7 +377,7 @@ bot.on(
           }
         }
         const res = await MENUS.start.send(bot, message.from, {
-          from_command: false,
+          fc: false,
           message,
         });
         confession.menu_id = res.message_id;
@@ -419,7 +418,7 @@ bot.on(
 bot.onText(
   commandRegexDict.verify,
   cMid((message) => {
-    MENUS.verify.send(bot, message.from, { from_command: true });
+    MENUS.verify.send(bot, message.from, { fc: true });
   })
 );
 
@@ -429,7 +428,7 @@ bot.onText(
 bot.onText(commandRegexDict.start, (message, reg) => {
   // TODO detect rickroll param somehow and send them a vid
   cvMid((message) => {
-    MENUS.start.send(bot, message.from, { from_command: true });
+    MENUS.start.send(bot, message.from, { fc: true });
   })(message, reg);
 });
 
@@ -440,7 +439,7 @@ bot.onText(
   commandRegexDict.lock,
   cvMid((message) => {
     MENUS.toggle_lock.send(bot, message.from, {
-      from_command: true,
+      fc: true,
       command: "lock",
     });
   })
@@ -450,7 +449,7 @@ bot.onText(
   commandRegexDict.unlock,
   cvMid((message) => {
     MENUS.toggle_lock.send(bot, message.from, {
-      from_command: true,
+      fc: true,
       command: "unlock",
     });
   })
@@ -462,7 +461,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.poll,
   cvMid((message) => {
-    MENUS.poll_info.send(bot, message.from, { from_command: true });
+    MENUS.poll_info.send(bot, message.from, { fc: true });
   })
 );
 
@@ -472,7 +471,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.help,
   cvMid((message) => {
-    MENUS.help.send(bot, message.from, { from_command: true });
+    MENUS.help.send(bot, message.from, { fc: true });
   })
 );
 
@@ -482,7 +481,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.about,
   cvMid((message) => {
-    MENUS.about.send(bot, message.from, { from_command: true });
+    MENUS.about.send(bot, message.from, { fc: true });
   })
 );
 
@@ -492,7 +491,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.fellows_info,
   cvMid((message) => {
-    MENUS.fellows_info.send(bot, message.from, { from_command: true });
+    MENUS.fellows_info.send(bot, message.from, { fc: true });
   })
 );
 
@@ -502,7 +501,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.fellow_darbs,
   cvMid((message) => {
-    MENUS.start.send(bot, message.from, { from_command: true });
+    MENUS.start.send(bot, message.from, { fc: true });
   })
 );
 
@@ -510,9 +509,9 @@ bot.onText(
  * Fellows Settings
  */
 bot.onText(
-  commandRegexDict.fellows_settings,
+  commandRegexDict.f_settings,
   cvMid(async (message) => {
-    MENUS.fellows_settings.send(bot, message.from, { from_command: "true" });
+    MENUS.f_settings.send(bot, message.from, { fc: "true" });
   })
 );
 
@@ -520,9 +519,9 @@ bot.onText(
  * Fellowdarbs list
  */
 bot.onText(
-  commandRegexDict.fellows_settings,
+  commandRegexDict.f_settings,
   cvMid(async (message) => {
-    MENUS.fellows_list.send(bot, message.from, { from_command: "true" });
+    MENUS.fellows_list.send(bot, message.from, { fc: "true" });
   })
 );
 
@@ -550,7 +549,7 @@ bot.onText(
         return;
       }
       MENUS.chats_add.send(bot, message.chat, {
-        from_command: true,
+        fc: true,
         chat_id: message.chat.id,
         message_id: message.message_id,
       });
@@ -576,7 +575,7 @@ bot.onText(
         return;
       }
       MENUS.chats_add.send(bot, message.chat, {
-        from_command: true,
+        fc: true,
         chat_id: message.chat.id,
         message_id: message.message_id,
         remove: true,
@@ -604,6 +603,8 @@ bot.on("callback_query", async (query) => {
   const params = params_from_string(query.data);
   const chat_id = query.message.chat.id;
   const message_id = query.message.message_id;
+
+  console.log(params); //TODO: remove console.log
 
   // admin only cb buttons
   if (params.rad == "true" && query.from.id == process.env.ADMIN_ID) {
@@ -777,7 +778,12 @@ bot.on("callback_query", async (query) => {
     }
     await user.save();
   }
-  console.log(params);
+  // update user status for reciving input
+  if (params.edit_item) {
+    const user = await User.findOne({ where: { telegram_id: query.from.id } });
+    user.state = `editing_${params.edit_item}`;
+    await user.save();
+  }
   if (params.user_state) {
     if (params.user_state == "w_fellows") {
       // TODO somthing here ig
@@ -789,7 +795,12 @@ bot.on("callback_query", async (query) => {
 
   if (params.remove_m) {
     const mess = await FellowsMessage.findByPk(parseInt(params.remove_m));
+    const chat = await mess.getFellowschat();
     await mess.destroy();
+    const amt = await chat.getFellowmessages();
+    if (amt.length == 0) {
+      await chat.destroy();
+    }
   }
 
   // query up the confessioon info for all of the things below

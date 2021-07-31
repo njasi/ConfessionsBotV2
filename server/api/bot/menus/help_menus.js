@@ -60,7 +60,7 @@ const fellows_info = new Menu(() => {
   const options = {
     ...ik([
       [butt("Help Menu", "menu=help"), butt("Cancel", "delete=true")],
-      [butt("Fellows Settings", "menu=fellows_settings")],
+      [butt("Fellows Settings", "menu=f_settings")],
     ]),
   };
   return { text, options };

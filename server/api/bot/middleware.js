@@ -38,13 +38,13 @@ function vMid(cb, skip_on_command = false) {
       cb(...arguments);
     } else if (isDm(message)) {
       const res = await MENUS.verify.send(bot, message.from, {
-        from_command: false,
+        fc: false,
       });
     } else {
       // message in a group chat
       if (isCommand(message)) {
         const res = await MENUS.verify.send(bot, message.from, {
-          from_command: true,
+          fc: true,
         });
       }
     }

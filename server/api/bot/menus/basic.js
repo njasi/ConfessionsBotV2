@@ -22,7 +22,7 @@ const start = new Menu(async (from, args) => {
   let text = `Welcome ${
     from.first_name
   }! Please use the buttons below to navigate the menus${
-    args.from_command || !active
+    args.fc || !active
       ? ". \n\nIf you want to send a confession just message me normally"
       : " and configure your confession"
   }.`;
@@ -54,12 +54,15 @@ const start = new Menu(async (from, args) => {
   }
   const options = {
     ...ik([
-      ...(args.from_command || !active
+      ...(args.fc || !active
         ? [
-            [butt("Fellowdarbs List", "menu=fellows_list")],
+            [butt("Fellowdarbs List", "menu=fellows_list&fellows_page=0")],
             [
               butt("Fellowdarbs Info", "menu=fellows_info"),
-              butt("Fellowdarbs Settings", "menu=fellows_settings"),
+              butt(
+                "Fellowdarbs Settings",
+                "menu=f_settings&fm=true"
+              ),
             ],
           ]
         : [
@@ -72,13 +75,13 @@ const start = new Menu(async (from, args) => {
         butt("Help", "menu=help"),
         butt(
           "Cancel",
-          args.from_command || !active
+          args.fc || !active
             ? `delete=true`
             : `remove_confession=${confs[0].id}`
         ),
       ],
     ]),
-    ...(args.from_command || args.from_swap || !active
+    ...(args.fc || args.from_swap || !active
       ? {}
       : { reply_to_message_id: args.message.message_id }),
   };
