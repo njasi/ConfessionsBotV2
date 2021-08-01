@@ -166,7 +166,7 @@ bot.on(
         text: message.text,
         from: { id: message.from.id },
         message: {
-          chat: { id: user.id },
+          chat: { id: user.telegram_id },
           message_id: user.misc.active_menu,
         },
       };
@@ -179,42 +179,49 @@ bot.on(
         if (!message.photo) {
           swapMenu(fake_query, { menu: "edit_error", error: "3" }, bot);
         } else {
-          user.misc.fellows_pic = message.photo[message.photo.length].file_id;
+          user.misc = {
+            ...user.misc,
+            fellows_pic: message.photo[message.photo.length - 1].file_id,
+          };
           await user.save();
           swapMenu(
             fake_query,
-            { menu: "fellows_about", fellow_id: user.id },
+            { menu: "fellows_about", fellow_id: user.id, edit: "true" },
             bot
           );
         }
+        return;
       } else if (user.state == "editing_bio") {
         if (!message.text) {
           swapMenu(fake_query, { menu: "edit_error", error: "2" }, bot);
         } else if (message.text.length > 300) {
           swapMenu(fake_query, { menu: "edit_error", error: "0" }, bot);
         } else {
-          user.misc.fellows_bio = message.text;
+          // TODO: do this the proper way, rn i have to make sequelize realise that there has been a change to the json by remaking it fully...
+          user.misc = { ...user.misc, fellows_bio: message.text };
           await user.save();
           swapMenu(
             fake_query,
-            { menu: "fellows_about", fellow_id: user.id },
+            { menu: "fellows_about", fellow_id: user.id, edit: "true" },
             bot
           );
         }
+        return;
       } else if (user.state == "editing_contact") {
         if (!message.text) {
           swapMenu(fake_query, { menu: "edit_error", error: "2" }, bot);
         } else if (message.text.length > 300) {
           swapMenu(fake_query, { menu: "edit_error", error: "1" }, bot);
         } else {
-          user.misc.fellows_contact = message.text;
+          user.misc = { ...user.misc, fellows_contact: message.text };
           await user.save();
           swapMenu(
             fake_query,
-            { menu: "fellows_about", fellow_id: user.id },
+            { menu: "fellows_about", fellow_id: user.id, edit: "true" },
             bot
           );
         }
+        return;
       } else if (user.state == "w_fellows") {
         // detect if they are sending a message to someone
         const mess = await FellowsMessage.findOne({
@@ -244,14 +251,16 @@ bot.on(
         }
 
         mess.text = message.text;
+        mess.message_id = message.message_id;
         mess.send();
         await mess.save();
-
         return;
       } else if (user.state == "w_feedback") {
-        // TODO: implement feedback
-      } else if (user.state == "w_about") {
-        // TODO: about profiles for fellowdarbs
+        swapMenu(fake_query, { menu: "feedback_done" }, bot); // TODO actually make the feedback done menu
+        bot.sendMessage(
+          process.env.ADMIN_ID,
+          `Feedback from ${user.name}:\n\n${message.text}`
+        );
       }
 
       const confs = await user.getConfessions({ include: { model: Chat } });
@@ -567,9 +576,9 @@ bot.onText(
  * Fellowdarbs list
  */
 bot.onText(
-  commandRegexDict.f_settings,
+  commandRegexDict.fellows_list,
   cvMid(async (message) => {
-    MENUS.fellows_list.send(bot, message.from, { fc: "true" });
+    MENUS.fellows_list.send(bot, message.from, { fc: "true", fellows_page: 0 });
   })
 );
 
@@ -830,8 +839,7 @@ bot.on("callback_query", async (query) => {
   if (params.edit_item) {
     const user = await User.findOne({ where: { telegram_id: query.from.id } });
     user.state = `editing_${params.edit_item}`;
-    user.misc.active_menu = message_id;
-    await user.save();
+    user.save();
   }
   if (params.user_state) {
     if (params.user_state == "w_fellows") {

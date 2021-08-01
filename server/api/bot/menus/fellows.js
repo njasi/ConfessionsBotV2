@@ -1,15 +1,12 @@
 const { User, FellowsMessage } = require("../../../db/models");
-const { ik, butt, getFullName } = require("../helpers");
+const { ik, butt } = require("../helpers");
 const { Menu } = require("./menu_class");
-const util = require("util");
 
 const PAGE_LENGTH = 5;
 
 const f_settings = new Menu(async (from, args) => {
   const thing = `menu=f_settings&fc=${args.fc}&register=${!args.user
     .fellow_darb}&fm=${args.fm}`;
-  console.log(thing.length);
-  console.log(thing);
   return {
     text: args.user.fellow_darb
       ? args.register
@@ -247,10 +244,10 @@ const fellows_about = new Menu(async (from, args) => {
         ? [
             [
               butt("Edit Contact", "menu=fellows_edit&edit_item=contact"),
-              butt("Edit Photo", "menu=fellows_edit&edit_item=pfp"),
+              butt("Edit About", "menu=fellows_edit&edit_item=bio"),
             ],
             [
-              butt("Edit About", "menu=fellows_edit&edit_item=bio"),
+              butt("Edit Photo", "menu=fellows_edit&edit_item=pfp"),
               butt("Back", `menu=f_settings&fm=${args.fm}`),
             ],
           ]
@@ -270,7 +267,6 @@ const fellows_about = new Menu(async (from, args) => {
           ]
     ),
   };
-
   return { text, options, send_image: fellows_pic };
 }, "fellows_about");
 
@@ -304,7 +300,7 @@ const fellows_edit = new Menu(async (from, args) => {
       ],
     ]),
   };
-  return { text, options };
+  return { text, options, send_image: fellows_pic };
 }, "fellows_edit");
 
 const edit_error = new Menu(async (from, args) => {
@@ -321,7 +317,7 @@ const edit_error = new Menu(async (from, args) => {
     ...ik([
       [
         butt(
-          "Cancel",
+          "Ok",
           `menu=fellows_about&fellow_id=${args.user.id}&edit=true&user_state=idle`
         ),
       ],

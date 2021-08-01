@@ -35,7 +35,6 @@ function getFullName(user, username = true) {
 }
 
 function params_from_string(str) {
-  console.log(str)
   let splt = str.split("&");
   const params = {};
   for (let i = 0; i < splt.length; i++) {

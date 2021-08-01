@@ -22,6 +22,10 @@ const Message = db.define("fellowsmessage", {
     type: Sequelize.STRING,
     allowNull: true,
   },
+  message_id: {
+    type: Sequelize.STRING,
+    allowNull: true,
+  },
 });
 
 Message.prototype.swapMenu = async function (new_menu, options = {}) {
@@ -32,7 +36,6 @@ Message.prototype.swapMenu = async function (new_menu, options = {}) {
   } else {
     user = await fchat.getTarget();
   }
-
 
   const data = await new_menu.load(
     { id: user.telegram_id },
@@ -58,7 +61,6 @@ Message.prototype.send = async function () {
 
   console.log(init, targ);
 
-
   let message_data;
   if (this.from_init) {
     message_data = {
@@ -78,6 +80,8 @@ Message.prototype.send = async function () {
     message_data.text,
     message_data.options
   );
+
+  
 };
 
 module.exports = Message;

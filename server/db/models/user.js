@@ -52,14 +52,18 @@ const User = db.define("user", {
   misc: {
     type: Sequelize.JSON,
     defaultValue: {
-      fellows_pic:
-        "AgACAgEAAx0CVRt_vgACATJhBVKRwisvkIxakIH2Xeq1QSCgJwACe6kxG5QiMURQpreK4GSw0QEAAwIAA3gAAyAE",
       fellows_bio: "filler bio...",
       fellows_contact: "filler contact...",
+      active_menu: "0",
+      fellows_pic:
+        "AgACAgEAAxkBAAI2TWEGwcvOMDgOG1VcgGivrv22WGzWAAKYqTEbC1A5RPsPMu4yimHhAQADAgADeAADIAQ",
     },
   },
 });
 
+
+// i never fully bothered implementing the cooldown cause no one really has a second chance
+// darbs either fully accept or destroy a person
 /**
  * status numbers:
  *
