@@ -6,11 +6,10 @@ const util = require("util");
 const PAGE_LENGTH = 5;
 
 const f_settings = new Menu(async (from, args) => {
-  const thing = `menu=f_settings&fc=${
-    args.fc
-  }&register=${!args.user.fellow_darb}&fm=${args.fm}`;
-  console.log(thing.length)
-  console.log(thing)
+  const thing = `menu=f_settings&fc=${args.fc}&register=${!args.user
+    .fellow_darb}&fm=${args.fm}`;
+  console.log(thing.length);
+  console.log(thing);
   return {
     text: args.user.fellow_darb
       ? args.register
@@ -24,11 +23,7 @@ const f_settings = new Menu(async (from, args) => {
         [
           butt(args.user.fellow_darb ? "Retire" : "Register", thing),
           butt(
-            args.fc == "true"
-              ? args.register
-                ? "Close"
-                : "Cancel"
-              : "Back",
+            args.fc == "true" ? (args.register ? "Close" : "Cancel") : "Back",
             args.fc == "true"
               ? "delete=true"
               : args.fm
@@ -304,13 +299,36 @@ const fellows_edit = new Menu(async (from, args) => {
       [
         butt(
           "Cancel",
-          `menu=fellows_about&fellow_id=${args.user.id}&edit=true`
+          `menu=fellows_about&fellow_id=${args.user.id}&edit=true&user_state=idle`
         ),
       ],
     ]),
   };
   return { text, options };
 }, "fellows_edit");
+
+const edit_error = new Menu(async (from, args) => {
+  const text =
+    args.error == "0"
+      ? "Your 'About Me' text was too long (300 char max)"
+      : args.error == "1"
+      ? "Your 'Contact Me About' text was too long (300 char max)"
+      : (args.error = "2"
+          ? "Please send a text message to set the text field."
+          : "Please send a photo to set your pfp.");
+  const options = {
+    send_photo: fellows_pic,
+    ...ik([
+      [
+        butt(
+          "Cancel",
+          `menu=fellows_about&fellow_id=${args.user.id}&edit=true&user_state=idle`
+        ),
+      ],
+    ]),
+  };
+  return { text, options };
+}, "edit_error");
 
 module.exports = {
   fellows_say, // asks what you want to send to someone
@@ -325,4 +343,5 @@ module.exports = {
   fellows_list, // list of fellows
   fellows_about, // see the info about a fellow darb
   fellows_edit, // options to edit your about info
+  edit_error, // error that comes up when you send somthing thats too long etc
 };

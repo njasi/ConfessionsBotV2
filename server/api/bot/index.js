@@ -162,11 +162,59 @@ bot.on(
         where: { telegram_id: message.from.id },
       });
 
+      const fake_query = {
+        text: message.text,
+        from: { id: message.from.id },
+        message: {
+          chat: { id: user.id },
+          message_id: user.misc.active_menu,
+        },
+      };
       if (user.locked) {
         return;
       } else if (user.state == "ignore") {
         // ignore user input
         return;
+      } else if (user.state == "editing_pfp") {
+        if (!message.photo) {
+          swapMenu(fake_query, { menu: "edit_error", error: "3" }, bot);
+        } else {
+          user.misc.fellows_pic = message.photo[message.photo.length].file_id;
+          await user.save();
+          swapMenu(
+            fake_query,
+            { menu: "fellows_about", fellow_id: user.id },
+            bot
+          );
+        }
+      } else if (user.state == "editing_bio") {
+        if (!message.text) {
+          swapMenu(fake_query, { menu: "edit_error", error: "2" }, bot);
+        } else if (message.text.length > 300) {
+          swapMenu(fake_query, { menu: "edit_error", error: "0" }, bot);
+        } else {
+          user.misc.fellows_bio = message.text;
+          await user.save();
+          swapMenu(
+            fake_query,
+            { menu: "fellows_about", fellow_id: user.id },
+            bot
+          );
+        }
+      } else if (user.state == "editing_contact") {
+        if (!message.text) {
+          swapMenu(fake_query, { menu: "edit_error", error: "2" }, bot);
+        } else if (message.text.length > 300) {
+          swapMenu(fake_query, { menu: "edit_error", error: "1" }, bot);
+        } else {
+          user.misc.fellows_contact = message.text;
+          await user.save();
+          swapMenu(
+            fake_query,
+            { menu: "fellows_about", fellow_id: user.id },
+            bot
+          );
+        }
       } else if (user.state == "w_fellows") {
         // detect if they are sending a message to someone
         const mess = await FellowsMessage.findOne({
@@ -782,6 +830,7 @@ bot.on("callback_query", async (query) => {
   if (params.edit_item) {
     const user = await User.findOne({ where: { telegram_id: query.from.id } });
     user.state = `editing_${params.edit_item}`;
+    user.misc.active_menu = message_id;
     await user.save();
   }
   if (params.user_state) {
