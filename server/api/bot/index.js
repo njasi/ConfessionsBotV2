@@ -2,7 +2,6 @@ const router = require("express").Router();
 // const request = require("request");
 const bot = require("./bot");
 const { isDm, params_from_string } = require("./helpers");
-const { verifyUser } = require("./verify_poll");
 const { commandRegexDict } = require("./config/command_regexes");
 const { MENUS, detectAndSwapMenu, swapMenu } = require("./menus/index");
 const {
@@ -13,6 +12,7 @@ const {
   FellowsMessage,
   FellowsChat,
 } = require("../../db/models");
+const { verifyUser } = require("./verify_poll");
 const { Op } = require("sequelize");
 const {
   cMid,
@@ -164,12 +164,15 @@ bot.on(
 
       const fake_query = {
         text: message.text,
-        from: { id: message.from.id },
+        from: { id: user.telegram_id },
         message: {
+          text: "filler text",
           chat: { id: user.telegram_id },
           message_id: user.misc.active_menu,
         },
       };
+
+      // console.log("\n\n FAKE QUERY\n\n", fake_query, "\n\n");
       if (user.locked) {
         return;
       } else if (user.state == "ignore") {
@@ -224,15 +227,70 @@ bot.on(
         return;
       } else if (user.state == "w_fellows") {
         // detect if they are sending a message to someone
+        // const chat = await FellowsChat.findAll({
+        //   where: {
+        //     [Op.or]: [
+        //       { target: user.id }, // target is responding from_init: false
+        //       { initiator: user.id }, // initator is sending from_init: true
+        //     ],
+        //   },
+        //   include: {
+        //     model: FellowsMessage,
+        //     where: {
+        //       status: "in_progress",
+        //     },
+        //   },
+        // });
+
+        const chats = await FellowsChat.findAll({
+          [Op.or]: [
+            {
+              where: {
+                target: user.id,
+              },
+              include: {
+                model: FellowsMessage,
+                required: true,
+                where: {
+                  status: "in_progress",
+                  from_init: false,
+                },
+              },
+            },
+            {
+              where: {
+                initiator: user.id,
+              },
+              include: {
+                model: FellowsMessage,
+                required: true,
+                where: {
+                  status: "in_progress",
+                  from_init: true,
+                },
+              },
+            },
+          ],
+          raw: true,
+        });
+
+        // console.log("\n\n Chat data \n\n", chats, "\n\n");
+
+        if (chats.length > 1) {
+          // must properly filter these out
+          // TODO: abort as they are contacting two people at once, illegal smh
+        }
+
+        const chat = chats[0];
+
         const mess = await FellowsMessage.findOne({
           where: {
             status: "in_progress",
-            [Op.or]: [
-              { target: user.id, from_init: false }, // target is responding
-              { initiator: user.id, from_init: true }, // initator is sending
-            ],
+            fellowschatId: chat.id,
           },
         });
+
+        // console.log("\n\n Message\n\n", mess, "\n\n");
 
         if (meta.type != "text") {
           confs[wait_cw_index].swapMenu(MENUS.fellows_message_error, {
@@ -252,8 +310,17 @@ bot.on(
 
         mess.text = message.text;
         mess.message_id = message.message_id;
-        mess.send();
+        // mess.send();
         await mess.save();
+        swapMenu(
+          fake_query,
+          {
+            menu: "fellows_send_options",
+            fmess: mess,
+            fchat: chat,
+          },
+          bot
+        );
         return;
       } else if (user.state == "w_feedback") {
         swapMenu(fake_query, { menu: "feedback_done" }, bot); // TODO actually make the feedback done menu
@@ -661,7 +728,7 @@ bot.on("callback_query", async (query) => {
   const chat_id = query.message.chat.id;
   const message_id = query.message.message_id;
 
-  console.log(params); //TODO: remove console.log
+  // console.log("\n\n PARAMS:\n\n", params, "\n\n"); //TODO: remove console.log
 
   // admin only cb buttons
   if (params.rad == "true" && query.from.id == process.env.ADMIN_ID) {
@@ -835,6 +902,7 @@ bot.on("callback_query", async (query) => {
     }
     await user.save();
   }
+
   // update user status for reciving input
   if (params.edit_item) {
     const user = await User.findOne({ where: { telegram_id: query.from.id } });
@@ -850,14 +918,23 @@ bot.on("callback_query", async (query) => {
     await user.save();
   }
 
+  // remove fellows message, and chat if its empty
   if (params.remove_m) {
     const mess = await FellowsMessage.findByPk(parseInt(params.remove_m));
-    const chat = await mess.getFellowschat();
+    const chat = await FellowsChat.findByPk(mess.fellowschatId);
     await mess.destroy();
-    const amt = await chat.getFellowmessages();
-    if (amt.length == 0) {
+    const amt = await FellowsMessage.count({
+      where: { fellowschatId: chat.id },
+    });
+    if (amt == 0) {
       await chat.destroy();
     }
+  }
+
+  // send the message to the person
+  if ((params.menu == "fellows_sent") & !!params.fmid) {
+    const fmess = await FellowsMessage.findByPk(params.fmid);
+    await fmess.send();
   }
 
   // query up the confessioon info for all of the things below
@@ -942,13 +1019,16 @@ bot.on("callback_query", async (query) => {
       fchat.obscure_target = false;
       // TODO: swap into menu?
     }
-    await fchat.save();
 
-    await MENUS.fellows_say.send(bot, query.from, {
-      ...params,
-      fmess: mess,
-      fchat,
-    });
+    await fchat.save();
+    const fake_params = { menu: "fellows_say", ...params, fmess: mess, fchat };
+    // console.log("\n\nSwapping Fellows Say Menu:\n", fake_params, "\n\n");
+    await swapMenu({ menu: "fellows_say", ...query }, fake_params, bot);
+    // await MENUS.fellows_say.send(bot, query.from, {
+    //   ...params,
+    //   fmess: mess,
+    //   fchat,
+    // });
 
     return;
   }

@@ -1,5 +1,6 @@
-const { User } = require("../../db/models");
+const User= require("../../db/models/user");
 const { getFullName } = require("./helpers");
+
 /**
  *  Checks if a telegram user is verified to use the bot by their telegram id
  * @param {string|number} userId - ID to verify

@@ -56,13 +56,11 @@ const start = new Menu(async (from, args) => {
     ...ik([
       ...(args.fc || !active
         ? [
-            [butt("Fellowdarbs List", "menu=fellows_list&fellows_page=0")],
             [
-              butt("Fellowdarbs Info", "menu=fellows_info"),
-              butt(
-                "Fellowdarbs Settings",
-                "menu=f_settings&fm=true"
-              ),
+              ...(args.user.fellow_darb
+                ? [butt("Fellowdarbs List", "menu=fellows_list&fellows_page=0")]
+                : []),
+              butt("Fellowdarbs Settings", "menu=f_settings&fm=true"),
             ],
           ]
         : [

@@ -1,6 +1,6 @@
-const axios = require("axios");
 const Sequelize = require("sequelize");
 const db = require("../db");
+const axios = require("axios");
 
 const FellowsChat = db.define("fellowschat", {
   obscure_initiator: {

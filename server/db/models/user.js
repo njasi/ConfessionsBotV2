@@ -61,7 +61,6 @@ const User = db.define("user", {
   },
 });
 
-
 // i never fully bothered implementing the cooldown cause no one really has a second chance
 // darbs either fully accept or destroy a person
 /**
@@ -97,6 +96,7 @@ User.prototype.isAllowed = function () {
   return this.verification_status > 0;
 };
 
+// TODO
 User.prototype.canRequestValidation = function () {};
 
 module.exports = User;

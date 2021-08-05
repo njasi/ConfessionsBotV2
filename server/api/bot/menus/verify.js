@@ -1,7 +1,7 @@
 const { butt, ik, getFullName } = require("../helpers");
 const { User } = require("../../../db/models");
-const { sendVerifyPoll } = require("../verify_poll");
 const { Menu } = require("./menu_class");
+const { sendVerifyPoll } = require("../verify_poll");
 
 const verify = new Menu(async (from, args) => {
   const user = args.user;

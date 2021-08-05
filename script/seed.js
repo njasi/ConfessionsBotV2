@@ -1,6 +1,6 @@
 if (process.env.NODE_ENV == "production") {
   // require("dotenv").config({ path: ".env_deploy" });
-  process.env.DATABASE_URL = process.argv[2]
+  process.env.DATABASE_URL = process.argv[2];
 } else {
   require("dotenv").config({ path: ".env_test" });
 }
@@ -16,6 +16,7 @@ async function seed_admin() {
       name: process.env.ADMIN_NAME,
       username: process.env.ADMIN_USERNAME,
       verification_status: 1,
+      fellow_darb: true,
     });
   } catch (error) {}
   console.log("\tSeeded admins");
@@ -41,8 +42,8 @@ async function seed_keyvals() {
 
 async function seed_chats() {
   console.log("Seeding Chats");
-  if(!process.env.HORNY_CHATS_IDS){
-    return
+  if (!process.env.HORNY_CHATS_IDS) {
+    return;
   }
   await Promise.all(
     process.env.HORNY_CHATS_IDS.split(" ").map((e, i) => {

@@ -1,8 +1,8 @@
 const db = require("../db");
 
 /***
- * I'm tracking row counts as free heroku postgres has row limits
- * and yes I'm now storing who has made what confession
+ * I'm tracking aprox row counts as free heroku postgres has row limits
+ * and yes I'm now storing who has made what confession for a bit (1 day) // TODO: make the delete hook preinstall itself
  * Its a good safety net to have considering the suicidal nature of some confessions...
  *
  * I figured out another method to get who had confessed something when I was asked by
