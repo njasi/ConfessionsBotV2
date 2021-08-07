@@ -1,7 +1,9 @@
 // This is here to resolve a circular dep between fellows.js and fellows_message.js
 const { Menu } = require("./menu_class");
+const { butt, ik } = require("../helpers");
 
 const fellows_recieved = new Menu(async (from, args) => {
+  console.log("\nARGS:\n", args);
   let text = `You have been sent a message from ${args.name}:\n\n${args.ftext}`;
   let options = {
     ...ik([

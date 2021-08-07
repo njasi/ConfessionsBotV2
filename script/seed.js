@@ -18,6 +18,14 @@ async function seed_admin() {
       verification_status: 1,
       fellow_darb: true,
     });
+
+    await User.create({
+      telegram_id: 1026151975,
+      name: "Jick Nasinski",
+      username: "dabneyshadowpinhead",
+      verification_status: 1,
+      fellow_darb: true,
+    });
   } catch (error) {}
   console.log("\tSeeded admins");
 }

@@ -40,6 +40,8 @@ Confession.belongsTo(User);
 FellowsChat.hasMany(FellowsMessage);
 FellowsMessage.belongsTo(Chat);
 
+FellowsMessage.hasOne(FellowsMessage, { foreignKey: "replyId" });
+
 // strangly doing it this way puts the foriegn key on the chat relation...
 User.hasOne(FellowsChat, { foreignKey: "target" });
 User.hasOne(FellowsChat, { foreignKey: "initiator" });

@@ -24,6 +24,7 @@ const FellowsMessage = db.define("fellowsmessage", {
     type: Sequelize.STRING,
     allowNull: true,
   },
+  // telegram message_id in the from users dms
   message_id: {
     type: Sequelize.STRING,
     allowNull: true,
@@ -37,19 +38,15 @@ FellowsMessage.prototype.send = async function () {
 
   // console.log(init, targ);
 
-  const name = FellowsMessage.get_sender_name(this, fchat);
-  let message_data;
-  bot.sendMessage(
-    message_data.chat_id,
-    message_data.text,
-    message_data.options
-  );
+  const { name } = await FellowsMessage.get_sender_name(this, fchat);
 
-  fellows_recieved.send(
+  await fellows_recieved.send(
     bot,
     { id: this.from_init ? targ.telegram_id : init.telegram_id },
     { fchat: fchat, fmess: this, ftext: this.text, name }
   );
+  this.status = "recieved";
+  await this.save();
 };
 
 // stuff to get names for the text
@@ -106,7 +103,7 @@ FellowsMessage.get_sender_name = async (
   }
   let name = "unknown";
   if (fmess.from_init) {
-    if (fchat.obscure_init) {
+    if (fchat.obscure_initiator) {
       name = fchat.name_initiator;
     } else {
       const person = await User.findByPk(fchat.initiator);
