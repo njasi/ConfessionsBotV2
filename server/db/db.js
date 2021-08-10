@@ -3,7 +3,9 @@ const Sequelize = require("sequelize");
 const databaseName = "confessions_bot";
 
 let options = {
-  logging: false,
+  logging: (thing) => {
+    console.log("\n", thing, "\n");
+  },
 };
 
 if (process.env.NODE_ENV == "production") {

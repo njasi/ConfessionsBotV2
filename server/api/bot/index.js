@@ -225,22 +225,6 @@ bot.on(
         }
         return;
       } else if (user.state == "w_fellows") {
-        // detect if they are sending a message to someone
-        // const chat = await FellowsChat.findAll({
-        //   where: {
-        //     [Op.or]: [
-        //       { target: user.id }, // target is responding from_init: false
-        //       { initiator: user.id }, // initator is sending from_init: true
-        //     ],
-        //   },
-        //   include: {
-        //     model: FellowsMessage,
-        //     where: {
-        //       status: "in_progress",
-        //     },
-        //   },
-        // });
-
         const chats = await FellowsChat.findAll({
           [Op.or]: [
             {
@@ -329,7 +313,7 @@ bot.on(
 
       const confs = await user.getConfessions({ include: { model: Chat } });
       const stages = confs.map((e) => e.stage);
-      // detect setting a content warning vs confssing
+      // detect setting a content warning vs confessing
       const wait_cw_index = stages.indexOf("wait_cw");
       if (wait_cw_index != -1) {
         bot.deleteMessage(message.from.id, message.message_id);
