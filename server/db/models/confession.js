@@ -3,12 +3,21 @@ const db = require("../db");
 const bot = require("../../api/bot/bot");
 const Keyval = require("./keyval");
 const Chat = require("./chat");
+const TokenGenerator = require("uuid-token-generator");
+const { ik, butt } = require("../../api/bot/helpers");
+
+const tokgen = new TokenGenerator();
 
 // const { swapMenu } = require("../../api/bot/menus");
 
 const Confession = db.define("confession", {
   num: {
     type: Sequelize.INTEGER,
+  },
+  nct: {
+    type: Sequelize.STRING,
+    unique: true,
+    defaultValue: null,
   },
   horny: {
     // horny chat confessions have a seperate count
@@ -104,6 +113,45 @@ const Confession = db.define("confession", {
     },
   },
 });
+
+Confession.afterCreate(async (confession, options) => {
+  const assign_nct = async (confession) => {
+    confession.nct = tokgen.generate();
+    try {
+      await confession.save();
+    } catch (error) {
+      console.log(error);
+      // TODO: assert dominance when a token is already in use and recall this function to hopefully get a new unused token
+      return;
+      await assign_nct(confession);
+    }
+  };
+  console.log("hello there");
+  await assign_nct(confession);
+});
+
+Confession.prototype.send_nct = async function () {
+  const user = await this.getUser();
+  const message = await bot.sendMessage(
+    user.telegram_id,
+    `<b>This NCT is proof of ownership of ${
+      this.horny ? "Horny " : ""
+    }Confession #${this.num}</b>\n\n<code>${this.nct}</code>`,
+    {
+      ...ik([
+        [
+          butt(
+            "Assert Ownership",
+            null,
+            (options = { switch_inline_query: this.nct })
+          ),
+        ],
+      ]),
+      parse_mode: "HTML",
+    }
+  );
+  await bot.pinChatMessage(user.telegram_id, message.message_id);
+};
 
 const text_add_prefix = (
   text,
@@ -384,6 +432,7 @@ Confession.prototype.send = async function () {
       }
     }
     this.send_by = null;
+    await this.send_nct();
     await this.save();
   } catch (error) {
     bot.sendMessage(

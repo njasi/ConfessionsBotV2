@@ -810,7 +810,6 @@ bot.on("callback_query", async (query) => {
       });
       return;
     }
-    console.log("\nCW_ID:\n", cw_id, "\nParams:\n", params);
     let conf = await Confession.findByPk(cw_id);
     if (conf == null) {
       bot.answerCallbackQuery(query.id, {
