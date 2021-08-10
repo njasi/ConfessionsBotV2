@@ -28,7 +28,7 @@ if (module === require.main) {
               process.env.HORNY_CHATS_IDS = result.HORNY_CHATS_IDS;
               if (result.DATABASE_URL) {
                 console.log(
-                  `Running seed with database url (${result.DATABASE_URL})...`
+                  `Running seed with database url...`
                 );
                 process.env.DATABASE_URL = result.DATABASE_URL;
                 require("./seed");

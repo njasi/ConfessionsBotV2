@@ -19,6 +19,7 @@ if (process.env.NODE_ENV == "production") {
   };
 }
 
+console.log("\ndb URL:\n", process.env.DATABASE_URL);
 const db = new Sequelize(
   process.env.DATABASE_URL || `postgres://localhost:5432/${databaseName}`,
   options

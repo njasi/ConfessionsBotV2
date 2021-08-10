@@ -1,16 +1,15 @@
-if (process.env.NODE_ENV == "production") {
-  // require("dotenv").config({ path: ".env_deploy" });
-  process.env.DATABASE_URL = process.argv[2];
-} else {
-  require("dotenv").config({ path: ".env_test" });
-}
+// if (process.env.NODE_ENV == "production") {
+// require("dotenv").config({ path: ".env_deploy" });
+// process.env.DATABASE_URL = process.argv[2];
+// } else {
+//   require("dotenv").config({ path: ".env_test" });
+// }
 
 const db = require("../../server/db");
-const test_chats = require("../../server/api/bot/test_chats");
 const seed_admin = require("./seed_admins");
 const seed_chats = require("./seed_chats");
 const seed_keyvals = require("./seed_keyvals");
-
+const test_chats = require("../../server/api/bot/test_chats");
 
 async function seed() {
   try {
