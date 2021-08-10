@@ -241,6 +241,7 @@ const fellows_list = new Menu(async (from, args) => {
       },
     ];
   });
+  console.log(people)
   const options = { ...ik([...people, arrows]) };
   return { text, options };
 }, "fellows_list");

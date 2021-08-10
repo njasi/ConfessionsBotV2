@@ -23,7 +23,6 @@ async function seed() {
     console.log("Updating seeded chats");
     await test_chats((tab = true));
     console.log("\tUpdated seeded chats");
-
     await db.close();
   } catch (error) {
     console.log("Error seeding db:");
