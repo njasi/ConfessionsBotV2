@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server",
     "start-dev": "nodemon server -e html,js,scss --ignore public --ignore client",
-    "seed": "node script/seed",
+    "seed": "node script/seed/seed",
     "deploy": "webpack git add -A",
     "heroku-prebuild": "npm install --dev",
     "retry": "git aaa && git commit -m \"npm auto update\" && npm run update && npm run heroku-log",
