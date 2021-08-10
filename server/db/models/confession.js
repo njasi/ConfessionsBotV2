@@ -377,9 +377,8 @@ Confession.prototype.send = async function () {
       await cNum.save();
       this.num = num;
     } else {
-      // TODO: should stickers be saved or just removed?
       // for now im just gonna remove the ones without content warning buttons
-      if (this.cw == null) {
+      if (this.content_warning == null) {
         await this.destroy();
         return;
       }
