@@ -287,6 +287,7 @@ bot.on(
           where: {
             status: "in_progress",
             fellowschatId: chat.id,
+            from_init: chat.initiator == user.id,
           },
         });
 
@@ -310,8 +311,9 @@ bot.on(
 
         mess.text = message.text;
         mess.message_id = message.message_id;
-        // mess.send();
+        user.state = "idle";
         await mess.save();
+        await user.save();
         swapMenu(
           fake_query,
           {
@@ -575,6 +577,16 @@ bot.onText(
     MENUS.toggle_lock.send(bot, message.from, {
       fc: true,
       command: "unlock",
+    });
+  })
+);
+
+bot.onText(
+  commandRegexDict.cancel,
+  cvMid((message) => {
+    MENUS.cancel.send(bot, message.from, {
+      fc: true,
+      command: "cancel",
     });
   })
 );
@@ -932,7 +944,7 @@ bot.on("callback_query", async (query) => {
   }
 
   // send the message to the person
-  if ((params.menu == "fellows_sent") & !!params.fmid) {
+  if (params.menu == "fellows_sent" && !!params.fmid) {
     const fmess = await FellowsMessage.findByPk(params.fmid);
     await fmess.send();
   }
@@ -950,14 +962,43 @@ bot.on("callback_query", async (query) => {
     },
   });
 
+  if (params.call == "true") {
+    const user = await User.findOne({ where: { telegram_id: query.from.id } });
+    user.state = "idle";
+    await user.save();
+    if (shared_confession) await shared_confession.destroy();
+    const messs = await FellowsMessage.findAll({
+      [Op.or]: [
+        {
+          where: {
+            status: "in_progress",
+            from_init: true,
+            initiator: user.id,
+          },
+        },
+        {
+          where: { status: "in_progress", from_init: false, target: user.id },
+        },
+      ],
+    });
+    [...messs].forEach((m) => {
+      console.log(m);
+      m.destroy();
+    });
+    await bot.answerCallbackQuery(query.id, {
+      text: "Your current actions were canceled!",
+      show_alert: true,
+    });
+    await bot.deleteMessage(user.telegram_id, message_id);
+  } else if (params.call == "false") {
+    bot.answerCallbackQuery(query.id, {
+      text: "Ok your actions were not canceled.",
+      show_alert: true,
+    });
+  }
+
   // contacting someone through fellow darbs / conf
   if (params.contact) {
-    // TODO: remove this thing
-    // bot.answerCallbackQuery(query.id, {
-    //   text: "This feature isnt fully implemented yet lol.",
-    //   show_alert: true,
-    // });
-
     // TODO: implement this fully
     // check that the user is even verified
     const from_user = await User.findOne({
@@ -997,6 +1038,9 @@ bot.on("callback_query", async (query) => {
       return;
     }
 
+    if (params.rfellow) {
+      // TODO: select random person somehow
+    }
     // time for the actual message creation
     const fchat = await FellowsChat.create({
       target: parseInt(params.contact),
@@ -1012,24 +1056,86 @@ bot.on("callback_query", async (query) => {
 
     // someone is contacting a confessor
     if (params.conf) {
+      const from_user = await User.findOne({
+        where: { telegram_id: query.from.id },
+      });
       fchat.name_target = `Confessor ${params.conf}`;
-    } else if (params.rfellow) {
-      // TODO: select random person somehow
+      await fchat.save();
+      const say_message = await MENUS.fellows_say.send(bot, query.from, {
+        ...params,
+        fmess: mess,
+        fchat,
+      });
+      console.log("contact message user misc data", {
+        ...from_user.misc,
+        active_menu: say_message.message_id,
+      });
+      from_user.misc = {
+        ...from_user.misc,
+        active_menu: say_message.message_id,
+      };
+      await from_user.save();
     } else {
       fchat.obscure_target = false;
-      // TODO: swap into menu?
+      await fchat.save();
+      const fake_params = {
+        menu: "fellows_say",
+        ...params,
+        fmess: mess,
+        fchat,
+      };
+      await swapMenu({ menu: "fellows_say", ...query }, fake_params, bot);
     }
+    return;
+  }
 
-    await fchat.save();
-    const fake_params = { menu: "fellows_say", ...params, fmess: mess, fchat };
-    // console.log("\n\nSwapping Fellows Say Menu:\n", fake_params, "\n\n");
-    await swapMenu({ menu: "fellows_say", ...query }, fake_params, bot);
-    // await MENUS.fellows_say.send(bot, query.from, {
-    //   ...params,
-    //   fmess: mess,
-    //   fchat,
-    // });
+  if (params.reveal) {
+    const rev_message = await FellowsMessage.findByPk(params.fmid);
+    const rev_chat = await FellowsChat.findByPk(rev_message.fellowschatId);
+    if (rev_message.from_init) {
+      rev_chat.obscure_initiator = false;
+    } else {
+      rev_chat.obscure_target = false;
+    }
+    await rev_chat.save()
+    bot.answerCallbackQuery(query.id, {
+      text: "Your name has now been revealed...",
+      show_alert: true,
+    });
+  }
 
+  // someone has received a fellows message
+  if (params.frec) {
+    const from_user = await User.findOne({
+      where: { telegram_id: query.from.id },
+    });
+    const received_message = await FellowsMessage.findByPk(params.fmid);
+    let settings = {
+      // messy but it works lol
+      from_init: !received_message.from_init,
+      fellowschatId: params.fcid,
+      replyId: params.fmid,
+    };
+    if (params.frec == "2") {
+      settings = {
+        ...settings,
+        from_init: received_message.from_init,
+        replyId: received_message.replyId,
+      };
+    }
+    // create message to respond
+    const fmess = await FellowsMessage.create(settings);
+
+    const message_out = await MENUS.fellows_say.send(bot, query.from, {
+      ...params,
+      fmess,
+      reply_to: message_id,
+    });
+    from_user.misc = { ...from_user.misc, active_menu: message_out.message_id };
+
+    console.log("\n\nhello there\n\n");
+    from_user.state = "w_fellows";
+    await from_user.save();
     return;
   }
 
@@ -1044,12 +1150,12 @@ bot.on("callback_query", async (query) => {
 
   // change allow response setting of a confession
   if ("allow_res" in params) {
-    if (params.allow_res == "true") {
-      bot.answerCallbackQuery(query.id, {
-        text: "Note that ths feature will currently not do anything.\n\nHowever it will allow responses to your confession once I finish it.",
-        show_alert: true,
-      });
-    }
+    // if (params.allow_res == "true") {
+    //   bot.answerCallbackQuery(query.id, {
+    //     text: "Note that ths feature will currently not do anything.\n\nHowever it will allow responses to your confession once I finish it.",
+    //     show_alert: true,
+    //   });
+    // }
     shared_confession.allow_responses = params.allow_res == "true";
     await shared_confession.save();
   }

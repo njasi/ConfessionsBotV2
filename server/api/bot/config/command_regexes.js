@@ -1,5 +1,5 @@
 const commandRegexDict = {
-  start: command("start", ["menu","fellows"]),
+  start: command("start", ["menu", "fellows"]),
   verify: command("verify"),
   lock: command("lock"),
   unlock: command("unlock"),
@@ -13,6 +13,7 @@ const commandRegexDict = {
   fellows_list: command("fellowslist"),
   join_network: command("joinnetwork"),
   leave_network: command("leavenetwork"),
+  cancel: command("cancel"),
 };
 
 function command(name, extra = []) {

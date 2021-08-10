@@ -124,8 +124,22 @@ const ending_remark = new Menu(async (from, args) => {
   return { text: choice[0], options };
 });
 
+const cancel = new Menu(async (from, args) => {
+  const text = "Cancel everything you are currently doing?";
+  const options = {
+    ...ik([
+      [
+        butt("Yes", "delete=true&call=true"),
+        butt("No", "delete=true&call=false"),
+      ],
+    ]),
+  };
+  return { text, options };
+});
+
 module.exports = {
   start, // the start menu
   send, // send confession / time delay options
+  cancel, // cancel everything going on
   ending_remark, // menu that you see after confessing, random remark
 };

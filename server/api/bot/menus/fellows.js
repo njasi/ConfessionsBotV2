@@ -2,8 +2,8 @@ const FellowsMessage = require("../../../db/models/fellows_message");
 const User = require("../../../db/models/user");
 const { ik, butt } = require("../helpers");
 const { Menu } = require("./menu_class");
-const fellows_recieved = require("./fellows_recieved");
-
+const fellows_received = require("./fellows_received");
+const util = require("util");
 const PAGE_LENGTH = 5;
 
 const f_settings = new Menu(async (from, args) => {
@@ -44,13 +44,13 @@ const f_settings = new Menu(async (from, args) => {
 }, "f_settings");
 
 const fellows_say = new Menu(async (from, args) => {
-  console.log("\n\nFellows Say Args\n", args, "\n\n");
+  console.log("\n\nFellows Say Args\n", args, "\n\n", from, "\n\n");
   const { name } = await FellowsMessage.get_target_name(
     args.fmess,
     args.fchat,
     (fellows_message_id = args.fmid)
   );
-  return {
+  const out = {
     text: `What would you like to say to ${name} (text only)?\n\nAfter you tell me I will give you privacy options.\n\nIf you want to cancel just use the cancel button`,
     options: {
       ...ik([
@@ -61,27 +61,44 @@ const fellows_say = new Menu(async (from, args) => {
           ),
         ],
       ]),
+      ...(args.reply_to ? { reply_to_message_id: args.reply_to } : {}),
     },
   };
+  console.log("\nFellows say out:\n", out);
+  return out;
 }, "fellows_say");
 
 const fellows_send_options = new Menu(async (from, args) => {
-  const { name } = await FellowsMessage.get_target_name(
+  const { name, fchat, fmess } = await FellowsMessage.get_target_name(
     args.fmess,
     args.fchat,
     (fellows_message_id = args.fmid)
   );
+  args.fchat = fchat;
+  args.fmess = fmess;
+  let button = [
+    [
+      butt(
+        "Send anonymously",
+        `menu=fellows_sent&p=false&fmid=${args.fmess.id}`
+      ),
+    ],
+  ];
+  let send_data = `menu=fellows_cr&p=true&fmid=${args.fmess.id}`;
+  if (
+    (fmess.from_init && !args.fchat.obscure_initiator) ||
+    (!fmess.from_init && !args.fchat.obscure_target)
+  ) {
+    button = [];
+    send_data = `menu=fellows_sent&p=false&fmid=${args.fmess.id}`;
+  }
+
   let text = `Your message to ${name} says:\n\n${args.fmess.text}`;
   let options = {
     ...ik([
+      ...button,
       [
-        butt(
-          "Send anonymously",
-          `menu=fellows_sent&p=false&fmid=${args.fmess.id}`
-        ),
-      ],
-      [
-        butt("Send", `menu=fellows_sent&p=true&fmid=${args.fmess.id}`),
+        butt("Send", send_data),
         butt(
           "Cancel Message",
           `user_state=idle&menu=fellows_cm&remove_m=${args.fmess.id}`
@@ -121,31 +138,30 @@ const fellows_message_error = new Menu(async (from, args) => {
   return { text, options };
 }, "fellows_message_error");
 
-const fellows_confirm_reveal = new Menu(async (from, args) => {
-  const { t_name } = await FellowsMessage.get_target_name(
+const fellows_cr = new Menu(async (from, args) => {
+  console.log("\nFELLOWS CR ARGS:\n", args);
+  const t_data = await FellowsMessage.get_target_name(
     args.fchat,
     args.fmess,
     (fellows_message_id = args.fmid)
   );
-  const s_name = await FellowsMessage.get_sender_name(
+  const s_data = await FellowsMessage.get_sender_name(
     args.fchat,
     args.fmess,
     (fellows_message_id = args.fmid)
   );
-  s_name = s_name.name;
-  t_name = t_name.name;
 
-  const text = `Are you sure that you want to reveal your name to ${t_name}? You are currently ${s_name}.`;
+  const text = `Are you sure that you want to reveal your name to ${t_data.name}? \n\nYou are currently disguised as "${s_data.name}".`;
   const options = {
     ...ik([
       [
-        butt("Yes", `menu=fellows_sent&fmid=${args.fmess.id}`),
-        butt("No", `menu=fellows_send_options&fmid=${args.fmess.id}`),
+        butt("Yes", `menu=fellows_sent&reveal=1&fmid=${t_data.fmess.id}`),
+        butt("No", `menu=fellows_send_options&fmid=${t_data.fmess.id}`),
       ],
     ]),
   };
   return { text, options };
-}, "fellows_confirm_reveal");
+}, "fellows_cr");
 
 const fellows_sent = new Menu(async (from, args) => {
   const { name } = await FellowsMessage.get_target_name(
@@ -170,16 +186,20 @@ const fellows_sent = new Menu(async (from, args) => {
 
 // TODO link this back to the contact menu
 const fellows_another = new Menu(async (from, args) => {
+  console.log("\nANOTHER ARGS:\n", args);
+
   const { name, fchat, fmess } = await FellowsMessage.get_target_name(
     args.fmess,
     args.fchat,
     (fellows_message_id = args.fmid)
   );
-  let text = `Would you like to send another message to ${name}?\n\nYou can always send another message to anyone, but using this button or replying to what they send will keep the same anon nickname.\n\nIt's technically possible for two people to contact eachother at the same time so just make sure youre responding to the right thing.`;
+  let text = `Would you like to send another message to ${name}?\n\nUsing this button or replying to what they send will use the same anon nickname.`;
   let options = {
-    ...ik([[butt("Send Another", `menu=fellows_say&fcid=${fchat.id}`)]]),
+    ...ik([[butt("Send Another", `frec=2&fmid=${fmess.id}&fcid=${fchat.id}`)]]), // type two frec => no invert from_init
   };
-  return { text, options };
+  const out = { text, options };
+  console.log("\nANOTHER OUT:\n", util.inspect(out, (depth = null)));
+  return out;
 }, "fellows_another");
 
 const fellows_list = new Menu(async (from, args) => {
@@ -334,11 +354,11 @@ const edit_error = new Menu(async (from, args) => {
 
 module.exports = {
   fellows_say, // asks what you want to send to someone
-  fellows_recieved, // the menu you see when you recieve a message from a fellow
+  fellows_received, // the menu you see when you recieve a message from a fellow
   fellows_message_error, // display errors, wrong type of message, too much text, etc
   fellows_send_options, // send options ie anon, non anon
   fellows_cm, // cancel message from send options
-  fellows_confirm_reveal, // confirmation that you want to reveal who you are
+  fellows_cr, // confirmation that you want to reveal who you are
   fellows_sent, // confirmation that a message was sent
   fellows_another, // ask if you want to send another message to the person.
   f_settings, // fellows settings

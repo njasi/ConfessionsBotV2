@@ -3,7 +3,7 @@ const db = require("../db");
 const bot = require("../../api/bot/bot");
 const FellowsChat = require("./fellows_chat");
 const User = require("./user");
-const fellows_recieved = require("../../api/bot/menus/fellows_recieved");
+const fellows_received = require("../../api/bot/menus/fellows_received");
 
 const FellowsMessage = db.define("fellowsmessage", {
   text: {
@@ -39,14 +39,34 @@ FellowsMessage.prototype.send = async function () {
   // console.log(init, targ);
 
   const { name } = await FellowsMessage.get_sender_name(this, fchat);
-
-  await fellows_recieved.send(
+  let reply_id = null;
+  if (this.replyId) {
+    const reply_to = await FellowsMessage.findByPk(this.replyId);
+    reply_id = reply_to.message_id;
+  }
+  await fellows_received.send(
     bot,
     { id: this.from_init ? targ.telegram_id : init.telegram_id },
-    { fchat: fchat, fmess: this, ftext: this.text, name }
+    { fchat: fchat, fmess: this, ftext: this.text, name, reply_id }
   );
-  this.status = "recieved";
+  this.status = "received";
   await this.save();
+};
+
+const grab_rel_models = async (_fmess, _fchat, fellows_message_id) => {
+  let fmess = _fmess;
+  let fchat = _fchat;
+  if (!fmess) {
+    console.log("\nFinding Fellows Message\n", fmess, "\n");
+    fmess = await FellowsMessage.findByPk(fellows_message_id);
+    console.log("\nFinding Fellows Message After\n", fmess, "\n");
+  }
+  if (!fchat) {
+    console.log("\nFinding Fellows Chat\n", fchat, "\n");
+    fchat = await FellowsChat.findByPk(fmess.fellowschatId);
+    console.log("\nFinding Fellows Chat After\n", fchat, "\n");
+  }
+  return { fmess, fchat };
 };
 
 // stuff to get names for the text
@@ -55,26 +75,20 @@ FellowsMessage.get_target_name = async (
   _fchat,
   fellows_message_id = null
 ) => {
-  let fmess = _fmess;
-  let fchat = _fchat;
-  if (!fmess) {
-    console.log(fellows_message_id, typeof fellows_message_id);
-    console.log("\nFinding Fellows Message\n", fmess, "\n");
-    fmess = await FellowsMessage.findByPk(fellows_message_id);
-  }
-  if (!fchat) {
-    console.log("\nFinding Fellows Chat\n", fmess, "\n");
-    fchat = await FellowsChat.findByPk(fmess.fellowschatId);
-  }
+  const { fmess, fchat } = await grab_rel_models(
+    _fmess,
+    _fchat,
+    fellows_message_id
+  );
   let name = "anon"; // default name just in case
   if (fmess.from_init) {
     if (fchat.obscure_target) {
-      if (fchat.target_cnum) {
-        // obscured confessor
-        name = `Confessor #${fchat.target_cnum}`;
-      } else {
-        name = fchat.target_name;
-      }
+      // if (fchat.target_cnum) {
+      //   // obscured confessor
+      //   name = `Confessor #${fchat.target_cnum}`;
+      // } else {
+      name = fchat.target_name;
+      // }
     } else {
       const person = await User.findByPk(fchat.target);
       name = person.name;
@@ -91,34 +105,29 @@ FellowsMessage.get_target_name = async (
 };
 
 FellowsMessage.get_sender_name = async (
-  fmess,
-  fchat,
+  _fmess,
+  _fchat,
   fellows_message_id = null
 ) => {
-  if (!fmess) {
-    args.fmess = await FellowsMessage.findByPk(fellows_message_id);
-  }
-  if (!fchat) {
-    args.fchat = await FellowsMessage.findByPk(fmess.fellowschatId);
-  }
-  let name = "unknown";
+  const { fmess, fchat } = await grab_rel_models(
+    _fmess,
+    _fchat,
+    fellows_message_id
+  );
+  let name = "anon";
   if (fmess.from_init) {
     if (fchat.obscure_initiator) {
       name = fchat.name_initiator;
     } else {
-      const person = await User.findByPk(fchat.initiator);
-      name = person.name;
+      const user = await User.findByPk(fchat.initiator);
+      name = user.name;
     }
   } else {
     if (fchat.obscure_target) {
-      const person = await User.findByPk(fchat.target);
-      name = person.name;
+      name = fchat.name_target;
     } else {
-      if (fchat.target_cnum) {
-        name = `Confessor #${fchat.target_cnum}`;
-      } else {
-        name = fchat.name_target;
-      }
+      const user = await User.findByPk(fchat.target);
+      name = user.name;
     }
   }
   return { name, fmess, fchat };

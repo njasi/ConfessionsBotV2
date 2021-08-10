@@ -38,7 +38,7 @@ Confession.belongsTo(User);
 // ik this is a bad setup, but im lazy so dont @ me
 
 FellowsChat.hasMany(FellowsMessage);
-FellowsMessage.belongsTo(Chat);
+FellowsMessage.belongsTo(FellowsChat);
 
 FellowsMessage.hasOne(FellowsMessage, { foreignKey: "replyId" });
 
