@@ -415,6 +415,7 @@ bot.on(
           text: message.caption == null ? message.text : message.caption,
           userId: user.id,
         };
+        console.log("\nGENERAL\n", general, "\n");
         switch (meta.type) {
           case "text": {
             if (message.text.length > 4062) {
@@ -443,6 +444,7 @@ bot.on(
           case "sticker":
           case "video":
           case "voice": {
+            console.log("\nTRYING TO CREATE AADSVV\n")
             confession = await Confession.create({
               ...general,
               file_id: message[meta.type].file_id,
@@ -450,6 +452,7 @@ bot.on(
             break;
           }
           case "photo": {
+            console.log("\nTRYING TO CREATE PHOTO\n")
             confession = await Confession.create({
               ...general,
               file_id: message.photo[message.photo.length - 1].file_id,
@@ -457,6 +460,7 @@ bot.on(
             break;
           }
           case "poll": {
+            console.log("\nTRYING TO CREATE POLL\n")
             // poll is a bit odd, we wil save the message_id as the
             // file_id and copy the message and forward it later
             confession = await Confession.create({
@@ -467,6 +471,7 @@ bot.on(
             break;
           }
           default: {
+            console.log("\nDEFAULT\n")
             bot.sendMessage(
               message.from.id,
               "Confessions bot does not currently support this type of message.",
@@ -481,6 +486,7 @@ bot.on(
             );
           }
         }
+        console.log("\nSEND MENU\n")
         const res = await MENUS.start.send(bot, message.from, {
           fc: false,
           message,
