@@ -1,6 +1,9 @@
-if (process.env.NODE_ENV == "production") {
-  // require("dotenv").config({ path: ".env_test" });
-  console.log("Deploy (test) mode");
+if (
+  process.env.NODE_ENV == "production" ||
+  process.env.NODE_ENV == "production_test"
+) {
+  require("dotenv").config({ path: ".env_deploy" });
+  console.log("Deploy mode");
 } else {
   require("dotenv").config({ path: ".env_test" });
   console.log("Develop mode");

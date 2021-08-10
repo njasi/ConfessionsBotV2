@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server",
+    "start-dep":"NODE_ENV=production_test node server",
     "start-dev": "nodemon server -e html,js,scss --ignore public --ignore client",
     "seed": "node script/seed/seed",
     "deploy": "webpack git add -A",
