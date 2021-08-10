@@ -185,6 +185,7 @@ bot.on(
             ...user.misc,
             fellows_pic: message.photo[message.photo.length - 1].file_id,
           };
+          user.state = "idle";
           await user.save();
           swapMenu(
             fake_query,
@@ -201,6 +202,7 @@ bot.on(
         } else {
           // TODO: do this the proper way, rn i have to make sequelize realise that there has been a change to the json by remaking it fully...
           user.misc = { ...user.misc, fellows_bio: message.text };
+          user.state = "idle";
           await user.save();
           swapMenu(
             fake_query,
@@ -216,6 +218,7 @@ bot.on(
           swapMenu(fake_query, { menu: "edit_error", error: "1" }, bot);
         } else {
           user.misc = { ...user.misc, fellows_contact: message.text };
+          user.state = "idle";
           await user.save();
           swapMenu(
             fake_query,
