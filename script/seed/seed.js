@@ -13,23 +13,27 @@ const test_chats = require("../../server/api/bot/test_chats");
 
 async function seed() {
   try {
-    console.log("Syncing db");
     await db.sync({ force: true });
-    // await db.sync();
+    await sequelize.drop()
+    console.log("Syncing db");
+  //   // await db.sync();
 
-    await seed_admin();
-    await seed_chats();
-    await seed_keyvals();
-    console.log("Updating seeded chats");
-    await test_chats((tab = true));
-    console.log("\tUpdated seeded chats");
-    await db.close();
-  } catch (error) {
-    console.log("Error seeding db:");
-    console.error(error);
-  } finally {
-    console.log("Closed db");
-    process.exit();
+  //   await seed_admin();
+  //   await seed_chats();
+  //   await seed_keyvals();
+  //   console.log("Updating seeded chats");
+  //   await test_chats((tab = true));
+  //   console.log("\tUpdated seeded chats");
+  //   await db.close();
+  // } catch (error) {
+  //   console.log("Error seeding db:");
+  //   console.error(error);
+  // } finally {
+  //   console.log("Closed db");
+  //   process.exit();
+  }
+  catch(error){
+
   }
 }
 
