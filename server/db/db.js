@@ -4,7 +4,7 @@ const databaseName = "confessions_bot";
 
 let options = {
   logging: (thing) => {
-    console.log("\n", thing, "\n");
+    // console.log("\n", thing, "\n");
   },
 };
 
@@ -21,7 +21,6 @@ if (process.env.NODE_ENV == "production") {
   };
 }
 
-console.log("\ndb URL:\n", process.env.DATABASE_URL);
 const db = new Sequelize(
   process.env.DATABASE_URL || `postgres://localhost:5432/${databaseName}`,
   options
