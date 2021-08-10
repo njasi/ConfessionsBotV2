@@ -241,7 +241,6 @@ const fellows_list = new Menu(async (from, args) => {
       },
     ];
   });
-  console.log(people)
   const options = { ...ik([...people, arrows]) };
   return { text, options };
 }, "fellows_list");
@@ -250,9 +249,9 @@ const fellows_about = new Menu(async (from, args) => {
   if (args.edit & (args.user.id != args.fellow_id)) {
     return; // not the same person so quit out of it.
   }
-  const { fellows_pic, fellows_bio, fellows_contact } = args.user.misc;
 
   const fellow = await User.findByPk(args.fellow_id);
+  const { fellows_pic, fellows_bio, fellows_contact } = fellow.misc;
   const title_txt = args.edit
     ? `<b>This is what your profile looks like:</b>\n<b>${fellow.name}${
         fellow.username ? ` (@${fellow.username})` : ""
