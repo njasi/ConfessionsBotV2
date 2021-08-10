@@ -714,6 +714,41 @@ bot.on("migrate_to_chat_id", async (message) => {
   await chat.save();
 });
 
+bot.on("inline_query", async (inline_query) => {
+  console.log("\nINLINE QUERY \n", inline_query);
+  const usr = await User.findOne({
+    where: { telegram_id: inline_query.from.id },
+  });
+  let buttons;
+  let options = { cache_time: 0 };
+
+  const conf = await Confession.findOne({ where: { nct: inline_query.query } });
+  if(usr.verification_status == -1){
+    buttons = []
+    bot.sendMessage(inline_query.from.id)
+    bot.ans
+  }
+   else if (conf && usr){
+    button = [
+      {
+        type: "article",
+        id: conf.nct,
+        title: `Claim ${conf.horny ? "Horny " : ""}Confession #${conf.num}`,
+        description:
+          "Selecting this will send a message via the bot to show you are the confessor.",
+        input_message_content: {
+          message_text: `<b>${usr.name} is ${
+            conf.horny ? "Horny " : ""
+          }Confessor #${conf.num}</b>`,
+          parse_mode: "HTML",
+        },
+      },
+    ];
+  }else if(!conf & usr){ // see if they are searching for conf num
+  }
+  await bot.answerInlineQuery(inline_query.id, button, options);
+});
+
 /**
  * all the annoying callbacks
  */
