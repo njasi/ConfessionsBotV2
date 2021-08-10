@@ -172,7 +172,6 @@ bot.on(
         },
       };
 
-      // console.log("\n\n FAKE QUERY\n\n", fake_query, "\n\n");
       if (user.locked) {
         return;
       } else if (user.state == "ignore") {
@@ -274,8 +273,6 @@ bot.on(
           raw: true,
         });
 
-        // console.log("\n\n Chat data \n\n", chats, "\n\n");
-
         if (chats.length > 1) {
           // must properly filter these out
           // TODO: abort as they are contacting two people at once, illegal smh
@@ -290,8 +287,6 @@ bot.on(
             from_init: chat.initiator == user.id,
           },
         });
-
-        // console.log("\n\n Message\n\n", mess, "\n\n");
 
         if (meta.type != "text") {
           confs[wait_cw_index].swapMenu(MENUS.fellows_message_error, {
@@ -740,8 +735,6 @@ bot.on("callback_query", async (query) => {
   const chat_id = query.message.chat.id;
   const message_id = query.message.message_id;
 
-  // console.log("\n\n PARAMS:\n\n", params, "\n\n"); //TODO: remove console.log
-
   // admin only cb buttons
   if (params.rad == "true" && query.from.id == process.env.ADMIN_ID) {
     // admin force approval
@@ -981,10 +974,7 @@ bot.on("callback_query", async (query) => {
         },
       ],
     });
-    [...messs].forEach((m) => {
-      console.log(m);
-      m.destroy();
-    });
+    [...messs].forEach((m) => m.destroy());
     await bot.answerCallbackQuery(query.id, {
       text: "Your current actions were canceled!",
       show_alert: true,
@@ -1066,10 +1056,6 @@ bot.on("callback_query", async (query) => {
         fmess: mess,
         fchat,
       });
-      console.log("contact message user misc data", {
-        ...from_user.misc,
-        active_menu: say_message.message_id,
-      });
       from_user.misc = {
         ...from_user.misc,
         active_menu: say_message.message_id,
@@ -1097,7 +1083,7 @@ bot.on("callback_query", async (query) => {
     } else {
       rev_chat.obscure_target = false;
     }
-    await rev_chat.save()
+    await rev_chat.save();
     bot.answerCallbackQuery(query.id, {
       text: "Your name has now been revealed...",
       show_alert: true,
@@ -1133,7 +1119,6 @@ bot.on("callback_query", async (query) => {
     });
     from_user.misc = { ...from_user.misc, active_menu: message_out.message_id };
 
-    console.log("\n\nhello there\n\n");
     from_user.state = "w_fellows";
     await from_user.save();
     return;

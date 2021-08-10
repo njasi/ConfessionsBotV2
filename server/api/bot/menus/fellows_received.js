@@ -3,7 +3,6 @@ const { Menu } = require("./menu_class");
 const { butt, ik } = require("../helpers");
 
 const fellows_received = new Menu(async (from, args) => {
-  console.log("\nFELLOWS RECEIVED ARGS:\n", args);
   let text = `You have been sent a message from ${args.name}:\n\n${args.ftext}`;
   let options = {
     ...ik([
@@ -15,12 +14,10 @@ const fellows_received = new Menu(async (from, args) => {
       input_field_placeholder: "Type your reply...",
     },
   };
-  const out = {
+  return {
     text,
     options,
   };
-  console.log("\nFELLOWS RECEIIVED OUT:\n", out);
-  return out;
 }, "fellows_received");
 
 module.exports = fellows_received; // the menu you see when you recieve a message from a fellow

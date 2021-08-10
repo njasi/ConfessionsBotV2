@@ -44,13 +44,13 @@ const f_settings = new Menu(async (from, args) => {
 }, "f_settings");
 
 const fellows_say = new Menu(async (from, args) => {
-  console.log("\n\nFellows Say Args\n", args, "\n\n", from, "\n\n");
   const { name } = await FellowsMessage.get_target_name(
     args.fmess,
     args.fchat,
     (fellows_message_id = args.fmid)
   );
-  const out = {
+
+  return {
     text: `What would you like to say to ${name} (text only)?\n\nAfter you tell me I will give you privacy options.\n\nIf you want to cancel just use the cancel button`,
     options: {
       ...ik([
@@ -64,8 +64,6 @@ const fellows_say = new Menu(async (from, args) => {
       ...(args.reply_to ? { reply_to_message_id: args.reply_to } : {}),
     },
   };
-  console.log("\nFellows say out:\n", out);
-  return out;
 }, "fellows_say");
 
 const fellows_send_options = new Menu(async (from, args) => {
@@ -139,7 +137,6 @@ const fellows_message_error = new Menu(async (from, args) => {
 }, "fellows_message_error");
 
 const fellows_cr = new Menu(async (from, args) => {
-  console.log("\nFELLOWS CR ARGS:\n", args);
   const t_data = await FellowsMessage.get_target_name(
     args.fchat,
     args.fmess,
@@ -186,8 +183,6 @@ const fellows_sent = new Menu(async (from, args) => {
 
 // TODO link this back to the contact menu
 const fellows_another = new Menu(async (from, args) => {
-  console.log("\nANOTHER ARGS:\n", args);
-
   const { name, fchat, fmess } = await FellowsMessage.get_target_name(
     args.fmess,
     args.fchat,
@@ -197,9 +192,7 @@ const fellows_another = new Menu(async (from, args) => {
   let options = {
     ...ik([[butt("Send Another", `frec=2&fmid=${fmess.id}&fcid=${fchat.id}`)]]), // type two frec => no invert from_init
   };
-  const out = { text, options };
-  console.log("\nANOTHER OUT:\n", util.inspect(out, (depth = null)));
-  return out;
+  return { text, options };
 }, "fellows_another");
 
 const fellows_list = new Menu(async (from, args) => {

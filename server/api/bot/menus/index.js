@@ -18,13 +18,8 @@ async function swapMenu(query, params, bot) {
       query,
       from_swap: true,
     });
-    // TODO: remove console.logs
-    console.log("\n\nMENU SWAP QUERY:\n\n", query.message, "\n\n");
-    console.log("\n\nMENU SWAP DATA:\n\n", data, "\n\n");
-    // console.log(util.inspect(query, (depth = null)));
     const wrap = async () => {
       if (data.send_image) {
-        console.log("\nSwapping into photo menu\n");
         // switch into a menu with an image, note the text limit (1024 char) change somewhere (from 4096)
         await bot.deleteMessage(
           query.message.chat.id,
@@ -41,7 +36,6 @@ async function swapMenu(query, params, bot) {
         );
         return message;
       } else if (!query.message.text) {
-        console.log("\nSwapping away from photo menu\n");
         // switching away from a media menu
         try {
           await bot.deleteMessage(
@@ -60,19 +54,8 @@ async function swapMenu(query, params, bot) {
             ...data.options,
           }
         );
-        console.log("\n\n OUT MESSAGE:\n\n", message, "\n\n");
         return message;
       } else {
-        console.log("\nSwapping into normal menu\n");
-        // normal menu swap
-        console.log(
-          "\nAAAAAAA\n",
-          {
-            message_id: query.message.message_id,
-            chat_id: query.message.chat.id,
-          },
-          "\n\n"
-        );
         const message = await bot.editMessageText(data.text, {
           message_id: query.message.message_id,
           chat_id: query.message.chat.id,

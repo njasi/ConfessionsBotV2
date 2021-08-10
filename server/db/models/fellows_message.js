@@ -36,8 +36,6 @@ FellowsMessage.prototype.send = async function () {
   const init = await User.findByPk(fchat.initiator);
   const targ = await User.findByPk(fchat.target);
 
-  // console.log(init, targ);
-
   const { name } = await FellowsMessage.get_sender_name(this, fchat);
   let reply_id = null;
   if (this.replyId) {
@@ -57,14 +55,10 @@ const grab_rel_models = async (_fmess, _fchat, fellows_message_id) => {
   let fmess = _fmess;
   let fchat = _fchat;
   if (!fmess) {
-    console.log("\nFinding Fellows Message\n", fmess, "\n");
     fmess = await FellowsMessage.findByPk(fellows_message_id);
-    console.log("\nFinding Fellows Message After\n", fmess, "\n");
   }
   if (!fchat) {
-    console.log("\nFinding Fellows Chat\n", fchat, "\n");
     fchat = await FellowsChat.findByPk(fmess.fellowschatId);
-    console.log("\nFinding Fellows Chat After\n", fchat, "\n");
   }
   return { fmess, fchat };
 };
@@ -83,12 +77,7 @@ FellowsMessage.get_target_name = async (
   let name = "anon"; // default name just in case
   if (fmess.from_init) {
     if (fchat.obscure_target) {
-      // if (fchat.target_cnum) {
-      //   // obscured confessor
-      //   name = `Confessor #${fchat.target_cnum}`;
-      // } else {
-      name = fchat.target_name;
-      // }
+      name = fchat.name_target;
     } else {
       const person = await User.findByPk(fchat.target);
       name = person.name;
