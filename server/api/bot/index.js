@@ -723,12 +723,11 @@ bot.on("inline_query", async (inline_query) => {
   let options = { cache_time: 0 };
 
   const conf = await Confession.findOne({ where: { nct: inline_query.query } });
-  if(usr.verification_status == -1){
-    buttons = []
-    bot.sendMessage(inline_query.from.id)
-    bot.ans
-  }
-   else if (conf && usr){
+  if (usr.verification_status == -1) {
+    buttons = [];
+    bot.sendMessage(inline_query.from.id);
+    bot.ans;
+  } else if (conf && usr) {
     button = [
       {
         type: "article",
@@ -744,7 +743,8 @@ bot.on("inline_query", async (inline_query) => {
         },
       },
     ];
-  }else if(!conf & usr){ // see if they are searching for conf num
+  } else if (!conf & usr) {
+    // see if they are searching for conf num
   }
   await bot.answerInlineQuery(inline_query.id, button, options);
 });

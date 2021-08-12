@@ -6,7 +6,7 @@ const Chat = require("./chat");
 const TokenGenerator = require("uuid-token-generator");
 const { ik, butt } = require("../../api/bot/helpers");
 
-const tokgen = new TokenGenerator();
+const tokgen = new TokenGenerator(256);
 
 // const { swapMenu } = require("../../api/bot/menus");
 
@@ -116,17 +116,20 @@ const Confession = db.define("confession", {
 
 Confession.afterCreate(async (confession, options) => {
   const assign_nct = async (confession) => {
-    confession.nct = tokgen.generate();
+    const token = tokgen.generate();
+    const confs = await Confession.findAll({ where: { nct: token } });
+    if (confs.length > 0) {
+      await assign_nct(confession);
+      return;
+    }
+    confession.nct = token;
     try {
       await confession.save();
     } catch (error) {
       console.log(error);
-      // TODO: assert dominance when a token is already in use and recall this function to hopefully get a new unused token
       return;
-      await assign_nct(confession);
     }
   };
-  console.log("hello there");
   await assign_nct(confession);
 });
 

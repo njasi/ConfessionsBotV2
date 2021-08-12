@@ -2,3 +2,6 @@
 .env_test
 node_modules
 script/order.js
+server/api/bot/config/old_archive
+state_secrets.txt
+the_entire_beemovie_script.txt
