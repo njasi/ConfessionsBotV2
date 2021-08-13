@@ -1,8 +1,8 @@
-const bot = require("./bot");
-const { isCommand } = require("./config/command_regexes");
-const { verifyUser } = require("./verify_poll");
-const { isDm } = require("./helpers");
-const { MENUS } = require("./menus");
+const bot = require("../bot");
+const { isCommand } = require("../config/command_regexes");
+const { verifyUser } = require("../verify_poll");
+const { isDm } = require("../helpers");
+const { MENUS } = require("../menus");
 
 const bab_stickers = [
   "CAACAgEAAx0CVRt_vgADqWBdAAHBj_FsnMHUx6_p7RkinhNBTAACMwEAAuvl7SH9ZMAMGgEehh4E", // wrong

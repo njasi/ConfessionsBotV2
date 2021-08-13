@@ -1,4 +1,4 @@
-const User= require("../../db/models/user");
+const User = require("../../db/models/user");
 const { getFullName } = require("./helpers");
 
 /**

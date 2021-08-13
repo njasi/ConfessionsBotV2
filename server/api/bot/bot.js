@@ -7,11 +7,11 @@ const bot = new Bot(token, {
 });
 
 if (process.env.NODE_ENV == "production") {
-  // bot.setWebHook();
   bot.setWebHook(`https://dabney-confessions.herokuapp.com/api/bot/${token}`);
 } else {
-  // TODO: setup webhook
+  // nothing for now, polling instead
 }
 
+require("./events"); //register all the events
+
 module.exports = bot;
-// oof
