@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const bot = require("./bot");
 
+require("./events"); //register all the events
+
 /**
  * api/bot/token
  */

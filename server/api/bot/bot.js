@@ -12,6 +12,4 @@ if (process.env.NODE_ENV == "production") {
   // nothing for now, polling instead
 }
 
-require("./events"); //register all the events
-
 module.exports = bot;
