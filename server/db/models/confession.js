@@ -100,8 +100,7 @@ const Confession = db.define("confession", {
     set(val) {
       try {
         JSON.parse(val);
-        console.log("M_INFO VAL:\n\n", val);
-        this.setDataValue("message_info", val); //TODO auto set archive chat id prop
+        this.setDataValue("message_info", val);
       } catch (error) {
         this.setDataValue("message_info", JSON.stringify(val));
       }
@@ -139,7 +138,9 @@ Confession.prototype.send_nct = async function () {
   await bot.editMessageText(
     `<b>This NCT is proof of ownership of ${
       this.horny ? "Horny " : ""
-    }Confession #${this.num}:</b>\nDo not delete this message.\n\n<code>${this.nct}</code>`,
+    }Confession #${this.num}:</b>\nDo not delete this message.\n\n<code>${
+      this.nct
+    }</code>`,
     {
       message_id: message.message_id,
       chat_id: user.telegram_id,
@@ -315,9 +316,15 @@ Confession.prototype.send_helper = async function (
   }
 };
 
-Confession.prototype.send_helper_combined = async function (chat_id) {
-  const message = await this.send_helper(chat_id);
+Confession.prototype.send_helper_combined = async function (
+  chat_id,
+  archive = false
+) {
+  const message = await this.send_helper(chat_id, (cw_forward = archive));
   this.message_info = [...this.message_info, [chat_id, message.message_id]];
+  if (chat_id == process.env.ARCHIVE_CHAT_ID || archive) {
+    this.archive_message_id = message.message_id;
+  }
   await this.save();
   return message;
 };
@@ -383,6 +390,7 @@ Confession.prototype.send = async function () {
             poll.message_id
           )
         );
+
         messages.push(
           bot.forwardMessage(
             process.env.POLL_CHAT_ID,
@@ -408,6 +416,10 @@ Confession.prototype.send = async function () {
       const all_sent = await Promise.all(messages);
       for (let i = 0; i < all_sent.length; i++) {
         m_info.push([all_sent[i].chat.id, all_sent[i].message_id]);
+        // console.log(all_sent[i].chat.id, process.env.ARCHIVE_CHAT_ID); //TODO test this
+        if (all_sent[i].chat.id == process.env.ARCHIVE_CHAT_ID) {
+          this.archive_message_id = all_sent[i].message_id;
+        }
       }
       this.message_info = [...this.message_info, ...m_info];
       await this.save();
@@ -418,7 +430,10 @@ Confession.prototype.send = async function () {
 
         if (chat.horny) {
           this.send_helper_combined(process.env.HORNY_CHANNEL_ID);
-          this.send_helper_combined(process.env.ARCHIVE_CHAT_ID);
+          this.send_helper_combined(
+            process.env.ARCHIVE_CHAT_ID,
+            (archive = true)
+          );
           const horny_chats = await Chat.findAll({ where: { horny: true } });
           for (let i = 0; i < horny_chats.length; i++) {
             this.send_helper_combined(horny_chats[i].chat_id);
@@ -428,14 +443,21 @@ Confession.prototype.send = async function () {
           try {
             this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
             this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
-            this.send_helper_combined(process.env.ARCHIVE_CHAT_ID);
+            this.send_helper_combined(
+              process.env.ARCHIVE_CHAT_ID,
+              (archive = true)
+            );
+
             this.send_helper_combined(chat.chat_id);
           } catch (error) {}
         }
       } else {
         this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
         this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
-        this.send_helper_combined(process.env.ARCHIVE_CHAT_ID);
+        this.send_helper_combined(
+          process.env.ARCHIVE_CHAT_ID,
+          (archive = true)
+        );
       }
     }
     // stickers are not counted as confessions, just spam lol

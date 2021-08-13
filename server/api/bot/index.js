@@ -746,10 +746,6 @@ bot.on("inline_query", async (inline_query) => {
       usr.telegram_id,
       data.message_id
     );
-    console.log(
-      verify_message.forward_from.username == process.env.BOT_USERNAME,
-      verify_message.text.indexOf(inline_query.query) != -1
-    );
     if (
       verify_message.forward_from.username == process.env.BOT_USERNAME &&
       verify_message.text.indexOf(inline_query.query) != -1
