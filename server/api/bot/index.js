@@ -437,6 +437,8 @@ bot.on(
                 }
               );
             } else {
+              // errors may occur if not restart seq use this to get ahead of the id
+              // ALTER SEQUENCE confessions_id_seq RESTART WITH 1453
               confession = await Confession.create(general);
             }
             break;
