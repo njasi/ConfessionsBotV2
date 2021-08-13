@@ -14,6 +14,7 @@ function isDm(message) {
     return false;
   }
 }
+
 /**
  * returns the full name of a user plus their username if they have one
  * @param {Telegram.user} user
@@ -34,6 +35,13 @@ function getFullName(user, username = true) {
   return first + last + un;
 }
 
+/**
+ * parses the paramaters i have stored in a callback query into an object. This is technically an unsafe operation...
+ * datastring is in a format of key=value&key1=value1&...
+ * limit 64 bytes
+ * @param {string} str: callback query data
+ * @returns an object with the keys and their values
+ */
 function params_from_string(str) {
   let splt = str.split("&");
   const params = {};
@@ -44,6 +52,11 @@ function params_from_string(str) {
   return params;
 }
 
+/**
+ * turn integers into their ordinal representations
+ * @param {integer} num
+ * @returns string which is the ordinal representation of the given int
+ */
 function int_to_ordinal(num) {
   let str_num = `${num}`;
   switch (str_num[str_num.length - 1]) {
@@ -63,7 +76,7 @@ function int_to_ordinal(num) {
       return `${num}th`;
   }
 }
-//  
+
 /**
  * haha butt
  * returns a formatted button for me so I can be lazy

@@ -1,10 +1,13 @@
+/**
+ * all of the data flows into the bot from here
+ */
 const router = require("express").Router();
 const bot = require("./bot");
 
 require("./events"); //register all the events
 
 /**
- * api/bot/token
+ * api/bot/[token]
  */
 router.post(`/${process.env.BOT_TOKEN}`, (req, res, next) => {
   try {
@@ -15,4 +18,7 @@ router.post(`/${process.env.BOT_TOKEN}`, (req, res, next) => {
   }
 });
 
-module.exports = router
+// TODO add a route to allow triggering the test chats function
+
+
+module.exports = router;

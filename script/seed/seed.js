@@ -14,14 +14,14 @@ const test_chats = require("../../server/api/bot/test_chats");
 async function seed() {
   try {
     await db.sync({ force: true });
-    // await db.drop();
-    // console.log("Syncing db");
-    // await seed_admin();
-    // await seed_chats();
-    // await seed_keyvals();
-    // console.log("Updating seeded chats");
-    // await test_chats((tab = true));
-    // console.log("\tUpdated seeded chats");
+    // await db.drop(); // sometimes need this to refresh the database cause heroku mean
+    console.log("Syncing db");
+    await seed_admin();
+    await seed_chats();
+    await seed_keyvals();
+    console.log("Updating seeded chats");
+    await test_chats((tab = true));
+    console.log("\tUpdated seeded chats");
     await db.close();
   } catch (error) {
     console.log("Error seeding db:");

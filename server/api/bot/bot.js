@@ -1,3 +1,7 @@
+/**
+ * setup the bot here so it can be imported elsewhere
+ */
+
 process.env.NTBA_FIX_319 = 1;
 
 const Bot = require("node-telegram-bot-api");

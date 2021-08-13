@@ -1,5 +1,14 @@
 const bot = require("./bot");
 const { Chat } = require("../../db/models");
+
+// TODO move this into the chat model file as a static method on Chat
+
+/**
+ * a function to test that chats in the network have not changed their names or been deleted
+ * updates names and removes chats as needed.
+ * Sends a message to the admin if chats have been deleted so they can verify it later
+ * @param {bool} tab: insert tabs in output if true
+ */
 async function test_chats(tab = false) {
   const removed = [];
   const chats = await Chat.findAll();

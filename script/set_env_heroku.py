@@ -7,7 +7,6 @@ ENV_MODES = {
     "dep": ".env_deploy"
 }
 
-
 def main(mode):
     file = open(ENV_MODES[mode])
     lines = filter(lambda line: re.search("^[^#.*]",line) and not line.isspace(),file.readlines())
