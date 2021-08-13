@@ -11,6 +11,10 @@ const bab_stickers = [
   "CAACAgQAAx0CVRt_vgAD92BdAhpBhnwT2j5drpebo5HExqKwAAKDAAMVdukHSHli2_AQ0TEeBA", // cursed crush
 ];
 
+/**
+ * randomly send a bab_sticker to harass someone who has done something illegal™
+ * @param {message} message : incoming message
+ */
 async function fool_blongus_absolute_utter_clampongus(message) {
   const num = Math.floor(Math.random() * bab_stickers.length);
   const sticker = await bot.sendSticker(message.chat.id, bab_stickers[num], {
