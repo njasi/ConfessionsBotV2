@@ -14,7 +14,7 @@ const test_chats = require("../../server/api/bot/test_chats");
 async function seed() {
   try {
     await db.sync({ force: true });
-    await db.drop();
+    // await db.drop();
     // console.log("Syncing db");
     // await seed_admin();
     // await seed_chats();
@@ -22,7 +22,7 @@ async function seed() {
     // console.log("Updating seeded chats");
     // await test_chats((tab = true));
     // console.log("\tUpdated seeded chats");
-    // await db.close();
+    await db.close();
   } catch (error) {
     console.log("Error seeding db:");
     console.error(error);

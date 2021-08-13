@@ -21,6 +21,7 @@ const {
   aMid,
   fool_blongus_absolute_utter_clampongus,
 } = require("./middleware");
+const { decode_nct } = require("../../db/models/nct_handling");
 module.exports = router;
 
 /**
@@ -709,13 +710,17 @@ bot.on("migrate_to_chat_id", async (message) => {
   );
 
   const chat = await Chat.findOne({ where: { chat_id: `${message.chat.id}` } });
-  chat.old_chat_id = chat.chat_id;
-  chat.chat_id = message.migrate_to_chat_id;
-  await chat.save();
+  if (chat) {
+    chat.old_chat_id = chat.chat_id;
+    chat.chat_id = message.migrate_to_chat_id;
+    await chat.save();
+  } else {
+    // not a chat tht is registered
+  }
 });
 
 bot.on("inline_query", async (inline_query) => {
-  console.log("\nINLINE QUERY \n", inline_query);
+  // console.log("\nINLINE QUERY \n", inline_query);
   const usr = await User.findOne({
     where: { telegram_id: inline_query.from.id },
   });
@@ -723,30 +728,54 @@ bot.on("inline_query", async (inline_query) => {
   let options = { cache_time: 0 };
 
   const conf = await Confession.findOne({ where: { nct: inline_query.query } });
+  const data = decode_nct(inline_query.query);
+
   if (usr.verification_status == -1) {
     buttons = [];
     bot.sendMessage(inline_query.from.id);
     bot.ans;
-  } else if (conf && usr) {
-    button = [
-      {
-        type: "article",
-        id: conf.nct,
-        title: `Claim ${conf.horny ? "Horny " : ""}Confession #${conf.num}`,
-        description:
-          "Selecting this will send a message via the bot to show you are the confessor.",
-        input_message_content: {
-          message_text: `<b>${usr.name} is ${
-            conf.horny ? "Horny " : ""
-          }Confessor #${conf.num}</b>`,
-          parse_mode: "HTML",
+  } else if (data && usr) {
+    // yes there is a pretty simple way to fake all of this but no ones dumb enough to bother to figure it out
+    // but this way the database does not need to have the confession in it anymore.
+    if (data.userId != usr.id) {
+      return; // user does not match
+    }
+
+    const verify_message = await bot.forwardMessage(
+      process.env.FORWARD_CHAT_ID,
+      usr.telegram_id,
+      data.message_id
+    );
+    console.log(
+      verify_message.forward_from.username == process.env.BOT_USERNAME,
+      verify_message.text.indexOf(inline_query.query) != -1
+    );
+    if (
+      verify_message.forward_from.username == process.env.BOT_USERNAME &&
+      verify_message.text.indexOf(inline_query.query) != -1
+    ) {
+      buttons = [
+        {
+          type: "article",
+          id: conf.num,
+          title: `Claim ${conf.horny ? "Horny " : ""}Confession #${conf.num}`,
+          description:
+            "Selecting this will send a message via the bot to show you are the confessor.",
+          input_message_content: {
+            message_text: `<b>${usr.name} is ${
+              conf.horny ? "Horny " : ""
+            }Confessor #${conf.num}</b>`,
+            parse_mode: "HTML",
+          },
         },
-      },
-    ];
+      ];
+    } else {
+      // token is not to a confession
+    }
   } else if (!conf & usr) {
     // see if they are searching for conf num
   }
-  await bot.answerInlineQuery(inline_query.id, button, options);
+  await bot.answerInlineQuery(inline_query.id, buttons, options);
 });
 
 /**

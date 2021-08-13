@@ -66,6 +66,9 @@ async function swapMenu(query, params, bot) {
       }
     };
     const message = await wrap();
+    if(!user){
+      return // user must not have verified yet
+    }
     user.misc = { ...user.misc, active_menu: message.message_id };
     await user.save();
   } catch (error) {

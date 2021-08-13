@@ -3,10 +3,8 @@ const db = require("../db");
 const bot = require("../../api/bot/bot");
 const Keyval = require("./keyval");
 const Chat = require("./chat");
-const TokenGenerator = require("uuid-token-generator");
 const { ik, butt } = require("../../api/bot/helpers");
-
-const tokgen = new TokenGenerator(256);
+const { generate_nct } = require("./nct_handling");
 
 // const { swapMenu } = require("../../api/bot/menus");
 
@@ -45,7 +43,7 @@ const Confession = db.define("confession", {
   text: {
     type: Sequelize.TEXT,
   },
-  channel_message_id: {
+  archive_message_id: {
     type: Sequelize.STRING,
   },
   reply_message: {
@@ -102,7 +100,8 @@ const Confession = db.define("confession", {
     set(val) {
       try {
         JSON.parse(val);
-        this.setDataValue("message_info", val);
+        console.log("M_INFO VAL:\n\n", val);
+        this.setDataValue("message_info", val); //TODO auto set archive chat id prop
       } catch (error) {
         this.setDataValue("message_info", JSON.stringify(val));
       }
@@ -114,45 +113,51 @@ const Confession = db.define("confession", {
   },
 });
 
-Confession.afterCreate(async (confession, options) => {
-  const assign_nct = async (confession) => {
-    const token = tokgen.generate();
-    const confs = await Confession.findAll({ where: { nct: token } });
-    if (confs.length > 0) {
-      await assign_nct(confession);
-      return;
-    }
-    confession.nct = token;
-    try {
-      await confession.save();
-    } catch (error) {
-      console.log(error);
-      return;
-    }
-  };
-  await assign_nct(confession);
-});
+/**
+ * Handle NCT shit
+ */
 
 Confession.prototype.send_nct = async function () {
   const user = await this.getUser();
-  const message = await bot.sendMessage(
+
+  let message = await bot.sendMessage(
     user.telegram_id,
+    "<b>Generating NCT...</b>",
+    { parse_mode: "HTML" }
+  );
+
+  let confs = { length: 2 };
+  let nct = "";
+  while (confs.length > 0) {
+    nct = generate_nct(this, message.message_id);
+    confs = await Confession.findAll({ where: { nct } });
+  }
+
+  this.nct = nct;
+  await this.save();
+
+  await bot.editMessageText(
     `<b>This NCT is proof of ownership of ${
       this.horny ? "Horny " : ""
-    }Confession #${this.num}</b>\n\n<code>${this.nct}</code>`,
+    }Confession #${this.num}:</b>\nDo not delete this message.\n\n<code>${this.nct}</code>`,
     {
-      ...ik([
-        [
-          butt(
-            "Assert Ownership",
-            null,
-            (options = { switch_inline_query: this.nct })
-          ),
-        ],
-      ]),
+      message_id: message.message_id,
+      chat_id: user.telegram_id,
       parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            butt(
+              "Assert Ownership",
+              null,
+              (options = { switch_inline_query: this.nct })
+            ),
+          ],
+        ],
+      },
     }
   );
+
   await bot.pinChatMessage(user.telegram_id, message.message_id);
 };
 
@@ -235,7 +240,7 @@ Confession.prototype.send_helper = async function (
   // cw_forward = true or no cw
   let options = {
     parse_mode: "HTML",
-    ...(this.allow_responses
+    ...(this.allow_responses // TODO change back when dealing with cw horny ones...
       ? {
           reply_markup: {
             inline_keyboard: [
@@ -378,6 +383,14 @@ Confession.prototype.send = async function () {
             poll.message_id
           )
         );
+        messages.push(
+          bot.forwardMessage(
+            process.env.POLL_CHAT_ID,
+            process.env.ARCHIVE_CHAT_ID,
+            poll.message_id
+          )
+        );
+
         if (this.chat_id) {
           let chat = await this.getChat();
           await this.send_helper(chat.chat_id, false, true);
@@ -405,6 +418,7 @@ Confession.prototype.send = async function () {
 
         if (chat.horny) {
           this.send_helper_combined(process.env.HORNY_CHANNEL_ID);
+          this.send_helper_combined(process.env.ARCHIVE_CHAT_ID);
           const horny_chats = await Chat.findAll({ where: { horny: true } });
           for (let i = 0; i < horny_chats.length; i++) {
             this.send_helper_combined(horny_chats[i].chat_id);
@@ -414,12 +428,14 @@ Confession.prototype.send = async function () {
           try {
             this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
             this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
+            this.send_helper_combined(process.env.ARCHIVE_CHAT_ID);
             this.send_helper_combined(chat.chat_id);
           } catch (error) {}
         }
       } else {
         this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
         this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
+        this.send_helper_combined(process.env.ARCHIVE_CHAT_ID);
       }
     }
     // stickers are not counted as confessions, just spam lol
