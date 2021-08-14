@@ -12,8 +12,6 @@ const secret_key =
 
 const generate_nct = (confession, token_message_id) => {
   // a cursed process to have the token house obscured data
-
-  // const token = tokgen.generate();
   const token = crypto.randomBytes(64).toString("hex");
   const offset = Math.round(Math.random() * (secret_key.length - 129)); // only the best magic numbers
   const user_string = `${confession.userId}b${confession.num}c${token_message_id}d`; // lol
