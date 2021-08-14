@@ -31,6 +31,7 @@ bot.on("inline_query", async (inline_query) => {
       data.message_id
     );
     if (
+      inline_query.query.length == 255 && // must be 255 chars
       !!conf &&
       verify_message.forward_from.username == process.env.BOT_USERNAME &&
       verify_message.text.indexOf(inline_query.query) != -1
