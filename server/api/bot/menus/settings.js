@@ -317,9 +317,9 @@ module.exports = {
   cw_confirm, // menu shows you your cw and asks if it is good
   cw_error, // error menu that says a cw is too long / can only be text
 
-  set_reply,
-  set_reply_confirm,
-  set_reply_error,
+  set_reply, // set the reply message target
+  set_reply_confirm, // menu where you confirm that a forwarded message is the one you want to reply to
+  set_reply_error, // shows if there is an error
 
   toggle_lock, // menu that gives you the toggle lock btn
   toggle_lock_confirm, // menu to confirm the toggle lock

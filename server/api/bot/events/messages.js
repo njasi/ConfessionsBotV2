@@ -1,3 +1,8 @@
+/**
+ * file to deal with the general messages the bot sees, ie anything that is not a callback or a query
+ * basically just messages sent by a user
+ */
+
 const bot = require("../bot");
 const { isDm } = require("../helpers");
 const { MENUS, swapMenu } = require("../menus/index");

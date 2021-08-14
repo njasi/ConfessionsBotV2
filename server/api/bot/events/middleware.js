@@ -29,7 +29,8 @@ async function fool_blongus_absolute_utter_clampongus(message) {
 }
 
 /**
- *  crappy verification middleware
+ * crappy verification middleware,
+ *    callback only happens if user is verified
  * @param {function} cb - callback function to execute after the verification
  * @param {boolean} skip_on_command - if true cb will be skipped if the message is a command
  */
@@ -41,13 +42,13 @@ function vMid(cb, skip_on_command = false) {
     if (v) {
       cb(...arguments);
     } else if (isDm(message)) {
-      const res = await MENUS.verify.send( message.from, {
+      const res = await MENUS.verify.send(message.from, {
         fc: false,
       });
     } else {
       // message in a group chat
       if (isCommand(message)) {
-        const res = await MENUS.verify.send( message.from, {
+        const res = await MENUS.verify.send(message.from, {
           fc: true,
         });
       }
@@ -56,6 +57,13 @@ function vMid(cb, skip_on_command = false) {
   return _temp;
 }
 
+/**
+ * makes sure people are sending commands to the bot in dms,
+ * if they are not, they get blongused.
+ *      callback only happens if user is in dms with bot
+ * @param {function} cb : callback function
+ * @returns undefined
+ */
 function cMid(cb) {
   async function _temp(message) {
     if (!isDm(message)) {
@@ -71,7 +79,7 @@ function cMid(cb) {
 
 /**
  * only admins of the chat can do this
- *
+ *     callback only happens if user is a chat admin or bot admin
  * @param {any} cb callback function
  */
 function aMid(cb) {

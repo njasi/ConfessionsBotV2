@@ -1,3 +1,8 @@
+/**
+ * misc messages that occur like
+ *  chat migrations, new chat members, leave chat, polling error
+ */
+
 const bot = require("../bot");
 const { Keyval, Chat } = require("../../../db/models");
 const { verifyUser } = require("../verify_poll");
