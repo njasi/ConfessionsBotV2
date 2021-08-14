@@ -58,9 +58,7 @@ async function in_secret_string(str, start = 0) {
       }
       i++;
     }
-  } catch (error) {
-    console.log(error.stack)
-  }
+  } catch (error) {}
   return -1;
 }
 
