@@ -128,7 +128,7 @@ Confession.prototype.send_nct = async function () {
   let confs = { length: 2 };
   let nct = "";
   while (confs.length > 0) {
-    nct = generate_nct(this, message.message_id);
+    nct = await generate_nct(this, message.message_id);
     confs = await Confession.findAll({ where: { nct } });
   }
 
