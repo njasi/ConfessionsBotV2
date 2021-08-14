@@ -3,8 +3,8 @@ const Sequelize = require("sequelize");
 const databaseName = "confessions_bot";
 
 let options = {
-  logging: (thing) => {
-    // console.log("\n", thing, "\n");
+  logging: (query) => {
+    // console.log("\n", query, "\n");
   },
 };
 
