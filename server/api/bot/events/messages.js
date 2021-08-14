@@ -353,7 +353,7 @@ bot.on(
             );
           }
         }
-        const res = await MENUS.start.send(bot, message.from, {
+        const res = await MENUS.start.send( message.from, {
           fc: false,
           message,
         });

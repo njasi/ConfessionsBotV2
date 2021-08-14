@@ -1,5 +1,6 @@
 const User = require("../../../db/models/user");
 const { ik, butt } = require("../helpers");
+const bot = require("../bot");
 
 /**
  * the general Menu class so i dont have to replicate a lot of code.
@@ -9,10 +10,15 @@ class Menu {
     this.get_data = get_data;
     this.key = key;
   }
+  /**
+   * run the get data function with whatever args are given to load
+   * @returns promise, object with .text and .options needed to send a menu
+   */
   async load() {
     return await this.get_data(...arguments);
   }
-  async send(bot, from, options) {
+
+  async send(from, options) {
     try {
       let data;
       // a lot of menus need the user so

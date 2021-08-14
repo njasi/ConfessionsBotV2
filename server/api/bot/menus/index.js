@@ -72,7 +72,7 @@ async function swapMenu(query, params, bot) {
     user.misc = { ...user.misc, active_menu: message.message_id };
     await user.save();
   } catch (error) {
-    // TODO standard error handling
+    // TODO make more standard error handling
     console.error(`There was an error swapping into the ${params.menu} menu.`);
     console.error(`Previous Menu:\n${query.message}`);
     console.error(error.stack);
@@ -85,7 +85,7 @@ async function swapMenu(query, params, bot) {
 }
 
 /**
- * detects if a query has a menu tag and sawps to it if there is
+ * detects if a query has a menu tag and swaps to it if there is
  *
  * returns true if a swap occurs, false otherwise
  */
@@ -98,7 +98,6 @@ async function detectAndSwapMenu(query, params, bot) {
 }
 
 // TODO menu -> verify_update
-// TODO menu -> settings (wip)
 
 const MENUS = {
   ...require("./basic"),

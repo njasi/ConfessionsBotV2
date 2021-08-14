@@ -96,7 +96,7 @@ User.prototype.isAllowed = function () {
   return this.verification_status > 0;
 };
 
-// TODO
+// TODO: actually make this function lol
 User.prototype.canRequestValidation = function () {};
 
 module.exports = User;

@@ -8,7 +8,7 @@ module.exports = router;
 /**
  * subrouters
  */
-router.use("/bot", require("./bot")); //TODO change back to ./bot
+router.use("/bot", require("./bot"));
 
 /**
  * when requesting a route that does not exist

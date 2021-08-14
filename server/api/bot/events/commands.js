@@ -19,7 +19,7 @@ const {
 bot.onText(
   commandRegexDict.verify,
   cMid((message) => {
-    MENUS.verify.send(bot, message.from, { fc: true });
+    MENUS.verify.send(message.from, { fc: true });
   })
 );
 
@@ -29,7 +29,7 @@ bot.onText(
 bot.onText(commandRegexDict.start, (message, reg) => {
   // TODO detect rickroll param somehow and send them a vid
   cvMid((message) => {
-    MENUS.start.send(bot, message.from, { fc: true });
+    MENUS.start.send(message.from, { fc: true });
   })(message, reg);
 });
 
@@ -39,7 +39,7 @@ bot.onText(commandRegexDict.start, (message, reg) => {
 bot.onText(
   commandRegexDict.lock,
   cvMid((message) => {
-    MENUS.toggle_lock.send(bot, message.from, {
+    MENUS.toggle_lock.send(message.from, {
       fc: true,
       command: "lock",
     });
@@ -52,7 +52,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.unlock,
   cvMid((message) => {
-    MENUS.toggle_lock.send(bot, message.from, {
+    MENUS.toggle_lock.send(message.from, {
       fc: true,
       command: "unlock",
     });
@@ -65,7 +65,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.cancel,
   cvMid((message) => {
-    MENUS.cancel.send(bot, message.from, {
+    MENUS.cancel.send(message.from, {
       fc: true,
       command: "cancel",
     });
@@ -78,7 +78,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.poll,
   cvMid((message) => {
-    MENUS.poll_info.send(bot, message.from, { fc: true });
+    MENUS.poll_info.send(message.from, { fc: true });
   })
 );
 
@@ -88,7 +88,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.help,
   cvMid((message) => {
-    MENUS.help.send(bot, message.from, { fc: true });
+    MENUS.help.send(message.from, { fc: true });
   })
 );
 
@@ -98,7 +98,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.about,
   cvMid((message) => {
-    MENUS.about.send(bot, message.from, { fc: true });
+    MENUS.about.send(message.from, { fc: true });
   })
 );
 
@@ -108,7 +108,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.fellows_info,
   cvMid((message) => {
-    MENUS.fellows_info.send(bot, message.from, { fc: true });
+    MENUS.fellows_info.send(message.from, { fc: true });
   })
 );
 
@@ -118,7 +118,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.fellow_darbs,
   cvMid((message) => {
-    MENUS.start.send(bot, message.from, { fc: true });
+    MENUS.start.send(message.from, { fc: true });
   })
 );
 
@@ -128,7 +128,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.f_settings,
   cvMid(async (message) => {
-    MENUS.f_settings.send(bot, message.from, { fc: "true" });
+    MENUS.f_settings.send(message.from, { fc: "true" });
   })
 );
 
@@ -138,7 +138,7 @@ bot.onText(
 bot.onText(
   commandRegexDict.fellows_list,
   cvMid(async (message) => {
-    MENUS.fellows_list.send(bot, message.from, { fc: "true", fellows_page: 0 });
+    MENUS.fellows_list.send(message.from, { fc: "true", fellows_page: 0 });
   })
 );
 
@@ -165,7 +165,7 @@ bot.onText(
         fool_blongus_absolute_utter_clampongus(message);
         return;
       }
-      MENUS.chats_add.send(bot, message.chat, {
+      MENUS.chats_add.send(message.chat, {
         fc: true,
         chat_id: message.chat.id,
         message_id: message.message_id,
@@ -191,7 +191,7 @@ bot.onText(
         fool_blongus_absolute_utter_clampongus(message);
         return;
       }
-      MENUS.chats_add.send(bot, message.chat, {
+      MENUS.chats_add.send(message.chat, {
         fc: true,
         chat_id: message.chat.id,
         message_id: message.message_id,

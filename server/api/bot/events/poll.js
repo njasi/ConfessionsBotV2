@@ -30,7 +30,7 @@ bot.on("poll", async (answer) => {
       const mapped = approve.map((e) => e.voter_count);
       const index = mapped.lastIndexOf(Math.max(...mapped));
       user.verification_status = index + 1;
-      MENUS.verify_accept.send(bot, { id: user.telegram_id });
+      MENUS.verify_accept.send( { id: user.telegram_id });
       bot.sendMessage(
         process.env.VERIFY_CHAT_ID,
         `<a href = "tg://user?id=${user.id}">${user.name}${
@@ -41,7 +41,7 @@ bot.on("poll", async (answer) => {
     } else if (d_c == active_voters && answer.total_voter_count !== 0) {
       // ban
       user.verification_status = -1;
-      MENUS.verify_ban.send(bot, { id: user.telegram_id });
+      MENUS.verify_ban.send( { id: user.telegram_id });
       bot.sendMessage(
         process.env.VERIFY_CHAT_ID,
         `<a href = "tg://user?id=${user.id}">${user.name}${
@@ -52,7 +52,7 @@ bot.on("poll", async (answer) => {
     } else {
       // set as disapprove
       user.verification_status = 0;
-      MENUS.verify_reject.send(bot, { id: user.telegram_id });
+      MENUS.verify_reject.send( { id: user.telegram_id });
       bot.sendMessage(
         process.env.VERIFY_CHAT_ID,
         `<a href = "tg://user?id=${user.id}">${user.name}${

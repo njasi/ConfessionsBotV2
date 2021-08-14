@@ -416,7 +416,6 @@ Confession.prototype.send = async function () {
       const all_sent = await Promise.all(messages);
       for (let i = 0; i < all_sent.length; i++) {
         m_info.push([all_sent[i].chat.id, all_sent[i].message_id]);
-        // console.log(all_sent[i].chat.id, process.env.ARCHIVE_CHAT_ID); //TODO test this
         if (all_sent[i].chat.id == process.env.ARCHIVE_CHAT_ID) {
           this.archive_message_id = all_sent[i].message_id;
         }

@@ -2,7 +2,7 @@ const User = require("../../db/models/user");
 const { getFullName } = require("./helpers");
 
 // TODO perhaps roll this into the poll events menu or the middleware file
-// TODO or maybe the user model as a static method
+// or maybe the user model as a static method
 
 /**
  * Checks if a telegram user is verified to use the bot by their telegram id

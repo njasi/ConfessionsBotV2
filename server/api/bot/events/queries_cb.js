@@ -29,7 +29,7 @@ bot.on("callback_query", async (query) => {
       user.poll_id = null;
       await user.save();
       bot.deleteMessage(chat_id, message_id);
-      MENUS.verify_accept.send(bot, { id: user.telegram_id });
+      MENUS.verify_accept.send( { id: user.telegram_id });
     }
     return;
   }
@@ -333,7 +333,7 @@ bot.on("callback_query", async (query) => {
       });
       fchat.name_target = `Confessor ${params.conf}`;
       await fchat.save();
-      const say_message = await MENUS.fellows_say.send(bot, query.from, {
+      const say_message = await MENUS.fellows_say.send( query.from, {
         ...params,
         fmess: mess,
         fchat,
@@ -394,7 +394,7 @@ bot.on("callback_query", async (query) => {
     // create message to respond
     const fmess = await FellowsMessage.create(settings);
 
-    const message_out = await MENUS.fellows_say.send(bot, query.from, {
+    const message_out = await MENUS.fellows_say.send( query.from, {
       ...params,
       fmess,
       reply_to: message_id,
