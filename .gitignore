@@ -6,3 +6,4 @@ script/edit.js
 server/api/bot/config/old_archive
 state_secrets.txt
 the_entire_beemovie_script.txt
+dump.rdb
