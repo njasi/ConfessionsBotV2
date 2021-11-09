@@ -243,20 +243,20 @@ bot.on("callback_query", async (query) => {
     await user.save();
     if (shared_confession) await shared_confession.destroy();
     const messs = await FellowsMessage.findAll({
-      [Op.or]: [
-        {
-          where: {
-            status: "in_progress",
-            from_init: true,
-            initiator: user.id,
-          },
-        },
-        {
-          where: { status: "in_progress", from_init: false, target: user.id },
-        },
-      ],
+      where: {
+        status: "in_progress",
+        from_init: true,
+        initiator: user.id,
+      },
     });
-    [...messs].forEach((m) => m.destroy());
+    const messs2 = await FellowsMessage.findAll({
+      where: {
+        status: "in_progress",
+        from_init: false,
+        target: user.id,
+      },
+    });
+    [...messs, ...messs2].forEach((m) => m.destroy());
     await bot.answerCallbackQuery(query.id, {
       text: "Your current actions were canceled!",
       show_alert: true,
@@ -314,12 +314,12 @@ bot.on("callback_query", async (query) => {
       // TODO: select random person somehow
     }
 
-    if(from_user.id == parseInt(params.contact)){
+    if (from_user.id == parseInt(params.contact)) {
       bot.answerCallbackQuery(query.id, {
         text: "You cannot contact yourself...",
         show_alert: true,
-      })
-      return
+      });
+      return;
     }
 
     // time for the actual message / chat creation
@@ -384,7 +384,9 @@ bot.on("callback_query", async (query) => {
     await rev_chat.save();
     bot.sendMessage(
       other_user.telegram_id,
-      `${rev_name.trim()} has decided to tell you that they are ${revealed_user.name}.`
+      `${rev_name.trim()} has decided to tell you that they are ${
+        revealed_user.name
+      }.`
     );
     bot.answerCallbackQuery(query.id, {
       text: "Your name has now been revealed...",
@@ -397,7 +399,7 @@ bot.on("callback_query", async (query) => {
     const from_user = await User.findOne({
       where: { telegram_id: query.from.id },
     });
-    console.log(params)
+    console.log(params);
     const received_message = await FellowsMessage.findByPk(params.fmid);
     let settings = {
       // messy but it works lol
