@@ -3,7 +3,6 @@ const User = require("../../../db/models/user");
 const { ik, butt } = require("../helpers");
 const { Menu } = require("./menu_class");
 const fellows_received = require("./fellows_received");
-const util = require("util");
 const PAGE_LENGTH = 5;
 
 const f_settings = new Menu(async (from, args) => {
