@@ -139,6 +139,7 @@ bot.on(
 
         if (chats.length > 1) {
           // must properly filter these out
+          console.log(chats)
           bot.sendMessage(user.telegram_id, "You are already contacting someone...\n Use /cancel if you think this is in error.")
           return
         }
