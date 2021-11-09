@@ -397,6 +397,7 @@ bot.on("callback_query", async (query) => {
     const from_user = await User.findOne({
       where: { telegram_id: query.from.id },
     });
+    console.log(params)
     const received_message = await FellowsMessage.findByPk(params.fmid);
     let settings = {
       // messy but it works lol
