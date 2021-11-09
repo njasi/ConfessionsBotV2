@@ -29,7 +29,7 @@ bot.on("callback_query", async (query) => {
       user.poll_id = null;
       await user.save();
       bot.deleteMessage(chat_id, message_id);
-      MENUS.verify_accept.send( { id: user.telegram_id });
+      MENUS.verify_accept.send({ id: user.telegram_id });
     }
     return;
   }
@@ -313,7 +313,16 @@ bot.on("callback_query", async (query) => {
     if (params.rfellow) {
       // TODO: select random person somehow
     }
-    // time for the actual message creation
+
+    if(from_user.id == parseInt(params.contact)){
+      bot.answerCallbackQuery(query.id, {
+        text: "You cannot contact yourself...",
+        show_alert: true,
+      })
+      return
+    }
+
+    // time for the actual message / chat creation
     const fchat = await FellowsChat.create({
       target: parseInt(params.contact),
       initiator: from_user.id,
@@ -333,7 +342,7 @@ bot.on("callback_query", async (query) => {
       });
       fchat.name_target = `Confessor ${params.conf}`;
       await fchat.save();
-      const say_message = await MENUS.fellows_say.send( query.from, {
+      const say_message = await MENUS.fellows_say.send(query.from, {
         ...params,
         fmess: mess,
         fchat,
@@ -360,12 +369,23 @@ bot.on("callback_query", async (query) => {
   if (params.reveal) {
     const rev_message = await FellowsMessage.findByPk(params.fmid);
     const rev_chat = await FellowsChat.findByPk(rev_message.fellowschatId);
+    let revealed_user, other_user, rev_name;
     if (rev_message.from_init) {
+      revealed_user = await User.findByPk(rev_chat.initiator);
+      other_user = await User.findByPk(rev_chat.target);
+      rev_name = rev_chat.name_initiator;
       rev_chat.obscure_initiator = false;
     } else {
+      revealed_user = await User.findByPk(rev_chat.target);
+      other_user = await User.findByPk(rev_chat.initiator);
+      rev_name = rev_chat.name_target;
       rev_chat.obscure_target = false;
     }
     await rev_chat.save();
+    bot.sendMessage(
+      other_user.telegram_id,
+      `${rev_name.trim()} has decided to tell you that they are ${revealed_user.name}.`
+    );
     bot.answerCallbackQuery(query.id, {
       text: "Your name has now been revealed...",
       show_alert: true,
@@ -394,7 +414,7 @@ bot.on("callback_query", async (query) => {
     // create message to respond
     const fmess = await FellowsMessage.create(settings);
 
-    const message_out = await MENUS.fellows_say.send( query.from, {
+    const message_out = await MENUS.fellows_say.send(query.from, {
       ...params,
       fmess,
       reply_to: message_id,

@@ -34,10 +34,21 @@ class Menu {
           ...Array.prototype.slice.call(arguments, [3])
         );
       }
-      const res = await bot.sendMessage(from.id, data.text, {
-        parse_mode: "HTML",
-        ...data.options,
-      });
+      let res;
+      try {
+        res = await bot.sendMessage(from.id, data.text, {
+          parse_mode: "HTML",
+          ...data.options,
+        });
+      } catch (error) {
+        if(`${error.response.body.description}`.indexOf("replied message not found") != -1){
+          delete data.options["reply_to_message_id"]
+          res = await bot.sendMessage(from.id, data.text, {
+            parse_mode: "HTML",
+            ...data.options,
+          });
+        }
+      }
       return res;
     } catch (error) {
       bot.sendMessage(

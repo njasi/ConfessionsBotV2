@@ -43,7 +43,6 @@ FellowsMessage.prototype.send = async function () {
     reply_id = reply_to.message_id;
   }
   await fellows_received.send(
-    bot,
     { id: this.from_init ? targ.telegram_id : init.telegram_id },
     { fchat: fchat, fmess: this, ftext: this.text, name, reply_id }
   );

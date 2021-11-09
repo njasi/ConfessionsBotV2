@@ -108,12 +108,10 @@ bot.on(
               },
               include: {
                 model: FellowsMessage,
-                required: true,
-                where: {
-                  status: "in_progress",
-                  from_init: false,
-                },
-              },
+                where:{
+                  from_init:false
+                }
+              }
             },
             {
               where: {
@@ -121,20 +119,28 @@ bot.on(
               },
               include: {
                 model: FellowsMessage,
-                required: true,
-                where: {
-                  status: "in_progress",
-                  from_init: true,
-                },
-              },
+                where:{
+                  from_init: true
+                }
+              }
             },
           ],
+          include: {
+            model: FellowsMessage,
+            required: true,
+            where: {
+              status: "in_progress",
+              // from_init: true,
+            },
+          },
           raw: true,
         });
 
+
         if (chats.length > 1) {
           // must properly filter these out
-          // TODO: abort as they are contacting two people at once, illegal smh
+          bot.sendMessage(user.telegram_id, "You are already contacting someone...\n Use /cancel if you think this is in error.")
+          return
         }
 
         const chat = chats[0];

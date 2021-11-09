@@ -5,6 +5,7 @@ const Keyval = require("./keyval");
 const Chat = require("./chat");
 const { ik, butt } = require("../../api/bot/helpers");
 const { generate_nct } = require("./nct_handling");
+const { User } = require(".");
 
 // const { swapMenu } = require("../../api/bot/menus");
 
@@ -364,6 +365,13 @@ Confession.prototype.send = async function () {
       if (this.horny) {
         const horny_chats = await Chat.findAll({ where: { horny: true } });
         for (let i = 0; i < horny_chats.length; i++) {
+          let user = await User.findByPk(this.userId)
+          if(!!user){
+            let member = await bot.getChatMember(horny_chats[i].chat_id,user.telegram_id)
+            if(!member){
+              continue
+            }
+          }
           await this.send_helper(horny_chats[i].chat_id, false, true);
           messages.push(
             bot.forwardMessage(
