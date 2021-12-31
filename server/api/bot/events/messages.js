@@ -4,7 +4,7 @@
  */
 
 const bot = require("../bot");
-const { isDm } = require("../helpers");
+const { isDm, entities_to_string } = require("../helpers");
 const { MENUS, swapMenu } = require("../menus/index");
 const {
   User,
@@ -108,10 +108,10 @@ bot.on(
               },
               include: {
                 model: FellowsMessage,
-                where:{
-                  from_init:false
-                }
-              }
+                where: {
+                  from_init: false,
+                },
+              },
             },
             {
               where: {
@@ -119,10 +119,10 @@ bot.on(
               },
               include: {
                 model: FellowsMessage,
-                where:{
-                  from_init: true
-                }
-              }
+                where: {
+                  from_init: true,
+                },
+              },
             },
           ],
           include: {
@@ -136,12 +136,14 @@ bot.on(
           raw: true,
         });
 
-
         if (chats.length > 1) {
           // must properly filter these out
-          console.log(chats)
-          bot.sendMessage(user.telegram_id, "You are already contacting someone...\n Use /cancel if you think this is in error.")
-          return
+          console.log(chats);
+          bot.sendMessage(
+            user.telegram_id,
+            "You are already contacting someone...\n Use /cancel if you think this is in error."
+          );
+          return;
         }
 
         const chat = chats[0];
@@ -291,10 +293,15 @@ bot.on(
 
       // make the confession
       let confession;
+
+      let parsed = entities_to_string(
+        message.caption == null ? message.text : message.caption,
+        message.entities
+      );
       try {
         const general = {
           type: meta.type,
-          text: message.caption == null ? message.text : message.caption,
+          text: parsed,
           userId: user.id,
         };
         switch (meta.type) {
@@ -365,7 +372,7 @@ bot.on(
             );
           }
         }
-        const res = await MENUS.start.send( message.from, {
+        const res = await MENUS.start.send(message.from, {
           fc: false,
           message,
         });

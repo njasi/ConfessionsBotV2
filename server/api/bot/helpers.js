@@ -99,6 +99,81 @@ function ik(buttons) {
   return { reply_markup: { inline_keyboard: buttons } };
 }
 
+/**
+ *
+ * @param {text of a telegram message} text
+ * @param {MessageEntity array} entities
+ * @returns
+ */
+function entities_to_string(text, entities) {
+  text = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  if (!entities) {
+    return text;
+  }
+  const tag_dict = {
+    bold: (a) => (a ? "<" : "</") + "b>",
+    strikethrough: (a) => (a ? "<" : "</") + "strike>",
+    italic: (a) => (a ? "<" : "</") + "em>",
+    underline: (a) => (a ? "<" : "</") + "u>",
+    code: (a) => (a ? "<" : "</") + "code>",
+    pre: (a) => (a ? "<" : "</") + "code>",
+    bot_command: (a) => (a ? `<span style="color:#8774e1">` : "</span>"),
+    spoiler: (a) => (a ? `<span class="tg-spoiler">` : "</span>"),
+  };
+
+  const tags = []; // offset:{start,end,offset,length}
+  let ofs = 0;
+  for (let i = 0; i < entities.length; i++) {
+    const curr = ofs + i;
+    tags[curr] = entities[i];
+    if (
+      curr > 0 &&
+      tags[curr - 1].offset + tags[curr - 1].length > entities[i].offset
+    ) {
+      // left of split
+      const full_len = tags[curr - 1].length;
+      tags[curr - 1] = {
+        ...tags[curr - 1],
+        length: entities[i].offset - tags[curr - 1].offset,
+      };
+      // right of split
+      tags[curr] = {
+        ...tags[curr - 1],
+        offset: entities[i].offset,
+        length: full_len - tags[curr - 1].length,
+      };
+      // new
+      tags[curr + 1] = entities[i];
+      ofs++;
+    }
+  }
+
+  let parsed = "";
+  for (let i = 0; i < text.length; i++) {
+    for (let j = 0; j < tags.length; j++) {
+      if (tags[j].offset == i) {
+        parsed += tag_dict[tags[j].type](true);
+      }
+      const span = tags[j].offset + tags[j].length;
+      if (span == i) {
+        parsed += tag_dict[tags[j].type](false);
+      } else if (i + 1 == text.length && span >= text.length) {
+        parsed += text[i] + tag_dict[tags[j].type](false);
+        i = -1;
+        break;
+      }
+    }
+    if (i == -1) {
+      break;
+    }
+    parsed += text[i];
+  }
+  return parsed;
+}
+
 module.exports = {
   isDm,
   getFullName,
@@ -106,4 +181,5 @@ module.exports = {
   int_to_ordinal,
   butt,
   ik,
+  entities_to_string,
 };
