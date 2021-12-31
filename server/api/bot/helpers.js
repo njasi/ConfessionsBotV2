@@ -120,7 +120,7 @@ function entities_to_string(text, entities) {
     underline: (a) => (a ? "<" : "</") + "u>",
     code: (a) => (a ? "<" : "</") + "code>",
     pre: (a) => (a ? "<" : "</") + "code>",
-    bot_command: (a) => (a ? `<span style="color:#8774e1">` : "</span>"),
+    bot_command: (a) => (a ? `` : ""),
     spoiler: (a) => (a ? `<span class="tg-spoiler">` : "</span>"),
   };
 
