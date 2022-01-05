@@ -106,6 +106,9 @@ function ik(buttons) {
  * @returns
  */
 function entities_to_string(text, entities) {
+  if (!text) {
+    return "";
+  }
   text = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
