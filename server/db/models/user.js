@@ -3,7 +3,7 @@ const db = require("../db");
 
 const User = db.define("user", {
   telegram_id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT,
   },
   name: {
     type: Sequelize.STRING,
