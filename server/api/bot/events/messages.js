@@ -343,6 +343,7 @@ bot.on(
           case "photo": {
             confession = await Confession.create({
               ...general,
+              type:message.has_spoiler? "spolier-photo" : "photo",
               file_id: message.photo[message.photo.length - 1].file_id,
             });
             break;
