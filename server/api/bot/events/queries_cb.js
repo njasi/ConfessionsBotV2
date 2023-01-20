@@ -38,7 +38,7 @@ bot.on("callback_query", async (query) => {
   if (params.c_ad) {
     // c_ad for chat admin
     const chat_admins = await bot.getChatAdministrators(chat_id);
-    let chat_info = await bot.getChat(params.chat_add);
+    let chat_info = await bot.getChat(params.chat_add || chat_id);
     if (
       [
         parseInt(process.env.ADMIN_ID),
@@ -399,7 +399,6 @@ bot.on("callback_query", async (query) => {
     const from_user = await User.findOne({
       where: { telegram_id: query.from.id },
     });
-    console.log(params);
     const received_message = await FellowsMessage.findByPk(params.fmid);
     let settings = {
       // messy but it works lol

@@ -34,7 +34,8 @@ const Confession = db.define("confession", {
       "animation",
       "voice",
       "poll",
-      "spoiler"
+      "spoiler",
+      "spoiler-photo"
     ),
   },
   content_warning: {
@@ -279,6 +280,12 @@ Confession.prototype.send_helper = async function (
       return await method_mappings[this.type](chat_id, this.file_id, {
         caption: text,
         ...options,
+      });
+    }
+    case "spoiler-photo":{
+      return await method_mappings["photo"](chat_id, this.file_id, {
+        caption: text,
+        ...{...options, has_spoiler: true},
       });
     }
     case "poll": {

@@ -125,8 +125,8 @@ function entities_to_string(text, entities) {
     pre: (a) => (a ? "<" : "</") + "code>",
     bot_command: (a) => (a ? `` : ""),
     spoiler: (a) => (a ? `<span class="tg-spoiler">` : "</span>"),
+    url: (a) => (a ? `<a>`:`</a>`),
   };
-
   const tags = []; // offset:{start,end,offset,length}
   let ofs = 0;
   for (let i = 0; i < entities.length; i++) {
