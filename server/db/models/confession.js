@@ -408,8 +408,8 @@ Confession.prototype.send = async function () {
 
         messages.push(
           bot.forwardMessage(
-            process.env.POLL_CHAT_ID,
             process.env.ARCHIVE_CHAT_ID,
+            process.env.CONFESSIONS_CHAT_ID,
             poll.message_id
           )
         );
