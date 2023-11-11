@@ -5,7 +5,7 @@ const Keyval = require("./keyval");
 const Chat = require("./chat");
 const { ik, butt } = require("../../api/bot/helpers");
 const { generate_nct } = require("./nct_handling");
-const { User } = require(".");
+const { User } = require("./user");
 
 // const { swapMenu } = require("../../api/bot/menus");
 
@@ -282,10 +282,10 @@ Confession.prototype.send_helper = async function (
         ...options,
       });
     }
-    case "spoiler-photo":{
+    case "spoiler-photo": {
       return await method_mappings["photo"](chat_id, this.file_id, {
         caption: text,
-        ...{...options, has_spoiler: true},
+        ...{ ...options, has_spoiler: true },
       });
     }
     case "poll": {
@@ -372,11 +372,14 @@ Confession.prototype.send = async function () {
       if (this.horny) {
         const horny_chats = await Chat.findAll({ where: { horny: true } });
         for (let i = 0; i < horny_chats.length; i++) {
-          let user = await User.findByPk(this.userId)
-          if(!!user){
-            let member = await bot.getChatMember(horny_chats[i].chat_id,user.telegram_id)
-            if(!member){
-              continue
+          let user = await this.getUser();
+          if (!!user) {
+            let member = await bot.getChatMember(
+              horny_chats[i].chat_id,
+              user.telegram_id
+            );
+            if (!member) {
+              continue;
             }
           }
           await this.send_helper(horny_chats[i].chat_id, false, true);
