@@ -370,22 +370,17 @@ Confession.prototype.send = async function () {
       );
 
       if (this.horny) {
-        const horny_chats = await Chat.findAll({ where: { horny: true } });
-        for (let i = 0; i < horny_chats.length; i++) {
-          let user = await this.getUser();
-          if (!!user) {
-            let member = await bot.getChatMember(
-              horny_chats[i].chat_id,
-              user.telegram_id
-            );
-            if (!member) {
-              continue;
-            }
-          }
-          await this.send_helper(horny_chats[i].chat_id, false, true);
+        const user = await this.getUser();
+        const hchat = await Chat.findAll({ where: { id: this.chatId } });
+
+        let hchat_id = hchat.chat_id;
+
+        let member = await bot.getChatMember(hchat_id, user.telegram_id);
+        if (member) {
+          await this.send_helper(hchat_id, false, true);
           messages.push(
             bot.forwardMessage(
-              horny_chats[i].chat_id,
+              hchat_id,
               process.env.HORNY_CHANNEL_ID,
               poll.message_id
             )
@@ -451,10 +446,12 @@ Confession.prototype.send = async function () {
             process.env.ARCHIVE_CHAT_ID,
             (archive = true)
           );
-          const horny_chats = await Chat.findAll({ where: { horny: true } });
-          for (let i = 0; i < horny_chats.length; i++) {
-            this.send_helper_combined(horny_chats[i].chat_id);
-          }
+          this.send_helper_combined(chat.chat_id);
+
+          // const horny_chats = await Chat.findAll({ where: { horny: true } });
+          // for (let i = 0; i < horny_chats.length; i++) {
+          //   this.send_helper_combined(horny_chats[i].chat_id);
+          // }
         } else {
           // chat may have left the network while this person was confessing
           try {
