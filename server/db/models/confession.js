@@ -385,6 +385,14 @@ Confession.prototype.send = async function () {
               poll.message_id
             )
           );
+          await this.send_helper(process.env.ARCHIVE_CHAT_ID, false, true);
+          messages.push(
+            bot.forwardMessage(
+              process.env.ARCHIVE_CHAT_ID,
+              process.env.HORNY_CHANNEL_ID,
+              poll.message_id
+            )
+          );
         }
       } else {
         await this.send_helper(process.env.CONFESSIONS_CHANNEL_ID, false, true);
