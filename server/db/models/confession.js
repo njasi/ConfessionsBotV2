@@ -372,7 +372,7 @@ Confession.prototype.send = async function () {
       const user = await this.getUser();
       const hchat = await Chat.findAll({ where: { id: this.chatId } });
 
-      let hchat_id = hchat.chat_id;
+      let hchat_id = hchat[0].chat_id;
 
       let member = await bot.getChatMember(hchat_id, user.telegram_id);
       if (member) {
