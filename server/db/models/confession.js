@@ -358,133 +358,145 @@ Confession.prototype.send = async function () {
   const num = cNum.value;
   this.num = num;
   this.message_info = [];
-  if (this.type == "poll") {
-    let poll;
-    let messages = [];
+  try {
+    if (this.type == "poll") {
+      let poll;
+      let messages = [];
 
-    poll = await this.send_helper_combined(
-      this.horny
-        ? process.env.HORNY_CHANNEL_ID
-        : process.env.CONFESSIONS_CHAT_ID
-    );
+      poll = await this.send_helper_combined(
+        this.horny
+          ? process.env.HORNY_CHANNEL_ID
+          : process.env.CONFESSIONS_CHAT_ID
+      );
 
-    if (this.horny) {
-      const user = await this.getUser();
-      const hchat = await Chat.findAll({ where: { id: this.chatId } });
+      if (this.horny) {
+        const user = await this.getUser();
+        const hchat = await Chat.findAll({ where: { id: this.chatId } });
 
-      let hchat_id = hchat[0].chat_id;
+        let hchat_id = hchat[0].chat_id;
 
-      let member = await bot.getChatMember(hchat_id, user.telegram_id);
-      if (member) {
-        await this.send_helper(hchat_id, false, true);
+        let member = await bot.getChatMember(hchat_id, user.telegram_id);
+        if (member) {
+          await this.send_helper(hchat_id, false, true);
+          messages.push(
+            bot.forwardMessage(
+              hchat_id,
+              process.env.HORNY_CHANNEL_ID,
+              poll.message_id
+            )
+          );
+        }
+      } else {
+        await this.send_helper(process.env.CONFESSIONS_CHANNEL_ID, false, true);
+        await this.send_helper(process.env.POLL_CHAT_ID, false, true);
         messages.push(
           bot.forwardMessage(
-            hchat_id,
-            process.env.HORNY_CHANNEL_ID,
-            poll.message_id
-          )
-        );
-      }
-    } else {
-      await this.send_helper(process.env.CONFESSIONS_CHANNEL_ID, false, true);
-      await this.send_helper(process.env.POLL_CHAT_ID, false, true);
-      messages.push(
-        bot.forwardMessage(
-          process.env.CONFESSIONS_CHANNEL_ID,
-          process.env.CONFESSIONS_CHAT_ID,
-          poll.message_id
-        )
-      );
-      messages.push(
-        bot.forwardMessage(
-          process.env.POLL_CHAT_ID,
-          process.env.CONFESSIONS_CHAT_ID,
-          poll.message_id
-        )
-      );
-
-      messages.push(
-        bot.forwardMessage(
-          process.env.ARCHIVE_CHAT_ID,
-          process.env.CONFESSIONS_CHAT_ID,
-          poll.message_id
-        )
-      );
-
-      if (this.chat_id) {
-        let chat = await this.getChat();
-        await this.send_helper(chat.chat_id, false, true);
-
-        messages.push(
-          bot.forwardMessage(
-            chat.chat_id,
+            process.env.CONFESSIONS_CHANNEL_ID,
             process.env.CONFESSIONS_CHAT_ID,
             poll.message_id
           )
         );
-      }
-    }
-    const m_info = [];
-    const all_sent = await Promise.all(messages);
-    for (let i = 0; i < all_sent.length; i++) {
-      m_info.push([all_sent[i].chat.id, all_sent[i].message_id]);
-      if (all_sent[i].chat.id == process.env.ARCHIVE_CHAT_ID) {
-        this.archive_message_id = all_sent[i].message_id;
-      }
-    }
-    this.message_info = [...this.message_info, ...m_info];
-    await this.save();
-  } else {
-    let chat;
-    if (this.chatId) {
-      chat = await this.getChat();
-
-      if (chat.horny) {
-        this.send_helper_combined(process.env.HORNY_CHANNEL_ID);
-        this.send_helper_combined(
-          process.env.ARCHIVE_CHAT_ID,
-          (archive = true)
+        messages.push(
+          bot.forwardMessage(
+            process.env.POLL_CHAT_ID,
+            process.env.CONFESSIONS_CHAT_ID,
+            poll.message_id
+          )
         );
-        this.send_helper_combined(chat.chat_id);
 
-        // const horny_chats = await Chat.findAll({ where: { horny: true } });
-        // for (let i = 0; i < horny_chats.length; i++) {
-        //   this.send_helper_combined(horny_chats[i].chat_id);
-        // }
-      } else {
-        // chat may have left the network while this person was confessing
-        try {
-          this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
-          this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
+        messages.push(
+          bot.forwardMessage(
+            process.env.ARCHIVE_CHAT_ID,
+            process.env.CONFESSIONS_CHAT_ID,
+            poll.message_id
+          )
+        );
+
+        if (this.chat_id) {
+          let chat = await this.getChat();
+          await this.send_helper(chat.chat_id, false, true);
+
+          messages.push(
+            bot.forwardMessage(
+              chat.chat_id,
+              process.env.CONFESSIONS_CHAT_ID,
+              poll.message_id
+            )
+          );
+        }
+      }
+      const m_info = [];
+      const all_sent = await Promise.all(messages);
+      for (let i = 0; i < all_sent.length; i++) {
+        m_info.push([all_sent[i].chat.id, all_sent[i].message_id]);
+        if (all_sent[i].chat.id == process.env.ARCHIVE_CHAT_ID) {
+          this.archive_message_id = all_sent[i].message_id;
+        }
+      }
+      this.message_info = [...this.message_info, ...m_info];
+      await this.save();
+    } else {
+      let chat;
+      if (this.chatId) {
+        chat = await this.getChat();
+
+        if (chat.horny) {
+          this.send_helper_combined(process.env.HORNY_CHANNEL_ID);
           this.send_helper_combined(
             process.env.ARCHIVE_CHAT_ID,
             (archive = true)
           );
-
           this.send_helper_combined(chat.chat_id);
-        } catch (error) {}
+
+          // const horny_chats = await Chat.findAll({ where: { horny: true } });
+          // for (let i = 0; i < horny_chats.length; i++) {
+          //   this.send_helper_combined(horny_chats[i].chat_id);
+          // }
+        } else {
+          // chat may have left the network while this person was confessing
+          try {
+            this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
+            this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
+            this.send_helper_combined(
+              process.env.ARCHIVE_CHAT_ID,
+              (archive = true)
+            );
+
+            this.send_helper_combined(chat.chat_id);
+          } catch (error) {}
+        }
+      } else {
+        this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
+        this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
+        this.send_helper_combined(
+          process.env.ARCHIVE_CHAT_ID,
+          (archive = true)
+        );
       }
+    }
+    // stickers are not counted as confessions, just spam lol
+    if (this.type != "sticker") {
+      cNum.value++;
+      await cNum.save();
+      this.num = num;
     } else {
-      this.send_helper_combined(process.env.CONFESSIONS_CHAT_ID);
-      this.send_helper_combined(process.env.CONFESSIONS_CHANNEL_ID);
-      this.send_helper_combined(process.env.ARCHIVE_CHAT_ID, (archive = true));
+      // for now im just gonna remove the ones without content warning buttons
+      if (this.content_warning == null) {
+        await this.destroy();
+        return;
+      }
     }
+    this.send_by = null;
+    await this.send_nct();
+    await this.save();
+  } catch (error) {
+    bot.sendMessage(
+      process.env.ADMIN_ID,
+      `There was an error sending confession #${num}:\n${error.stack}`
+    );
+    this.send_by = null;
+    await this.save();
   }
-  // stickers are not counted as confessions, just spam lol
-  if (this.type != "sticker") {
-    cNum.value++;
-    await cNum.save();
-    this.num = num;
-  } else {
-    // for now im just gonna remove the ones without content warning buttons
-    if (this.content_warning == null) {
-      await this.destroy();
-      return;
-    }
-  }
-  this.send_by = null;
-  await this.send_nct();
-  await this.save();
 };
 
 Confession.prototype.swapMenu = async function (new_menu, options = {}) {
