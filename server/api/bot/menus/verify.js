@@ -53,7 +53,7 @@ const verify_request = new Menu(async (from, args) => {
     const until = 0;
     const now = new Date();
     now.getTime() -
-      (verification_request_time.getTime() + user.verification_cool_down);
+      (user.verification_request_time.getTime() + user.verification_cool_down);
     if (until > 0) {
       const text = `You need to wait for ${
         until / 3600000
