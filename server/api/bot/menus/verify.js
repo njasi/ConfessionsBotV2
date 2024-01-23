@@ -50,8 +50,9 @@ const verify_request = new Menu(async (from, args) => {
     },
   });
   if (!create) {
-    const until =
-      Date().getTime() -
+    const until = 0;
+    const now = new Date();
+    now.getTime() -
       (verification_request_time.getTime() + user.verification_cool_down);
     if (until > 0) {
       const text = `You need to wait for ${
@@ -77,8 +78,7 @@ const verify_request = new Menu(async (from, args) => {
 
 const verify_accept = new Menu((from, args) => {
   return {
-    text:
-      "<b>Congratulations!</b>\nYou've been approved to use Confessions Bot! \nPlease join the <a href='https://t.me/joinchat/EKj6oJQp9l9aPD5O'>Verification Chat</a>\n",
+    text: "<b>Congratulations!</b>\nYou've been approved to use Confessions Bot! \nPlease join the <a href='https://t.me/joinchat/EKj6oJQp9l9aPD5O'>Verification Chat</a>\n",
     options: {
       parse_mode: "HTML",
       ...ik([
@@ -91,8 +91,7 @@ const verify_accept = new Menu((from, args) => {
 
 const verify_reject = new Menu((from, args) => {
   return {
-    text:
-      "We're sorry, it appears that you were denied access to Confessions Bot. You can reapply in a day.",
+    text: "We're sorry, it appears that you were denied access to Confessions Bot. You can reapply in a day.",
     options: {
       ...ik([[butt("Ok", "delete=true")]]),
     },
@@ -101,8 +100,7 @@ const verify_reject = new Menu((from, args) => {
 
 const verify_ban = new Menu((from, args) => {
   return {
-    text:
-      "We're sorry, it appears that you were banned from Confessions Bot. If you think this is a mistake, please say so in some Dabney chat. If you're not in any Dabney chats, perhaps you shouldn't be using the bot...",
+    text: "We're sorry, it appears that you were banned from Confessions Bot. If you think this is a mistake, please say so in some Dabney chat. If you're not in any Dabney chats, perhaps you shouldn't be using the bot...",
     options: {
       ...ik([[butt("Ok", "delete=true")]]),
     },
